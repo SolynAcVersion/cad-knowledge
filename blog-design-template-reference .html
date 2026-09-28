@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<!--
+  ============================================================
+  技术博客模板 · test.html
+  ------------------------------------------------------------
+  设计思路（提取自 CAD Generation 调研报告）：
+  1. 浅色正文 + 深色页头：正文长时间阅读要低刺激，页头承担"第一眼的冲击"。
+  2. 编号章节（01 / 02 …）+ 英文小字副标题：给长文一个可数的骨架，方便跳读。
+  3. 三档色彩语义：蓝=主线 / 青=对比 / 紫=进阶 / 琥珀=注意 / 玫红=风险 / 绿=结论。
+  4. 组件而不是排版：正文、卡片、表格、流程、引用块、代码块，全部是"可直接抄的块"。
+  5. 细线 + 大留白 + 单一强调色：栅格背景、1px 描边、16px 圆角、hover 轻微上浮。
+  6. 公式与正文同源：行内 $...$ 跟随正文基线，行间 $$...$$ 自动变成公式卡片；
+     渲染引擎为 KaTeX（CDN），离线时降级为等宽 LaTeX 源码，排版不塌。
+
+  用法：整份文件不依赖任何构建工具，复制后替换正文即可。
+        需要换配色时，只改 :root 里的色板变量。
+  ============================================================
+-->
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="一份可直接复用的技术博客版式：浅色正文、编号章节、卡片 / 表格 / 流程 / 引用 / 代码块组件。">
+<title>技术博客模板 · 结构 · 组件 · 用法</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- 字体与参考文档完全一致：同一份 Google Fonts 请求（三款字体、同字重、同顺序）
+     Space Grotesk = 标题与数字，Noto Serif SC = 中文标题和正文，JetBrains Mono = 代码与元信息 -->
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Noto+Serif+SC:wght@400;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<!-- LaTeX 渲染引擎样式（KaTeX）。需要完全离线时换成本地路径，见 07 章节末尾 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.18.9/dist/katex.min.css">
+<style>
+/* ============================================================
+   1. 设计变量 —— 换主题只需要改这一段
+   ============================================================ */
+:root{
+  /* 文字与描边 */
+  --ink:#0C1220; --ink-2:#1B2438; --sub:#5C6880; --faint:#8B96AC;
+  --line:#E3E8F0; --line-2:#EEF2F8;
+  /* 背景 */
+  --bg:#FBFCFE; --card:#FFFFFF;
+  /* 语义色：主 / 对比 / 注意 / 风险 / 进阶 / 结论 */
+  --blue:#2563EB; --blue-soft:#EAF1FF;
+  --cyan:#06B6D4; --cyan-soft:#E4FAFE;
+  --amber:#F59E0B; --amber-soft:#FFF6E5;
+  --rose:#E11D48; --rose-soft:#FFECF1;
+  --violet:#7C3AED; --violet-soft:#F3EDFF;
+  --green:#10B981; --green-soft:#E6F9F2;
+  /* 字体：等宽 = 代码与元信息，display = 标题与数字 */
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --display:'Space Grotesk','Noto Serif SC',sans-serif;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;
+  /* 版心 */
+  --wrap:1180px;
+}
+
+/* ============================================================
+   2. 基础层
+   ============================================================ */
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg); color:var(--ink); font-family:var(--sans);
+  line-height:1.75; font-size:15.5px; -webkit-font-smoothing:antialiased;
+  background-image:
+    radial-gradient(circle at 12% 8%, rgba(37,99,235,.055), transparent 42%),
+    radial-gradient(circle at 88% 4%, rgba(124,58,237,.05), transparent 38%),
+    linear-gradient(var(--line-2) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line-2) 1px, transparent 1px);
+  background-size:auto,auto,64px 64px,64px 64px;
+  background-attachment:fixed;
+}
+.wrap{max-width:var(--wrap);margin:0 auto;padding:0 30px}
+::selection{background:var(--blue-soft);color:var(--blue)}
+
+/* 阅读进度条（博客比报告更需要"还剩多少"） */
+.progress{position:fixed;top:0;left:0;height:3px;width:0;z-index:60;
+  background:linear-gradient(90deg,var(--blue),var(--cyan) 55%,var(--violet));
+  transition:width .12s linear}
+
+/* ============================================================
+   3. 页头 hero —— 全页唯一深色区块
+   ============================================================ */
+.hero{position:relative;overflow:hidden;color:#fff;
+  background:linear-gradient(135deg,#0A1020 0%,#131E3A 46%,#1E2A52 100%);
+  padding:76px 0 62px;}
+.hero::before{content:"";position:absolute;inset:0;
+  background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
+  background-size:52px 52px;
+  -webkit-mask-image:radial-gradient(ellipse 80% 70% at 50% 40%,#000 30%,transparent 100%);
+  mask-image:radial-gradient(ellipse 80% 70% at 50% 40%,#000 30%,transparent 100%);}
+.hero::after{content:"";position:absolute;width:620px;height:620px;right:-190px;top:-260px;
+  background:radial-gradient(circle,rgba(6,182,212,.30),transparent 66%);filter:blur(24px);}
+.hero .wrap{position:relative;z-index:2}
+.eyebrow{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);
+  font-size:11.5px;letter-spacing:.20em;text-transform:uppercase;color:#7DD3FC;
+  border:1px solid rgba(125,211,252,.34);border-radius:100px;padding:7px 16px;
+  margin-bottom:26px;background:rgba(125,211,252,.07);}
+.eyebrow .dot{width:6px;height:6px;border-radius:50%;background:#22D3EE;box-shadow:0 0 10px #22D3EE;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.32}}
+.hero h1{font-family:var(--display);font-size:clamp(34px,5.2vw,60px);font-weight:700;
+  line-height:1.1;letter-spacing:-.022em;margin-bottom:20px;}
+.hero h1 em{font-style:normal;background:linear-gradient(96deg,#60A5FA,#22D3EE 52%,#A78BFA);
+  -webkit-background-clip:text;background-clip:text;color:transparent;}
+.hero p.lede{font-size:17px;color:#B6C2DA;max-width:780px;line-height:1.8}
+.hero p.lede strong{color:#fff}
+/* 作者署名行 */
+.byline{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-top:30px;
+  font-family:var(--mono);font-size:12.5px;color:#93A2BF;letter-spacing:.02em}
+.byline .sep{width:1px;height:15px;background:rgba(255,255,255,.18)}
+.avatar{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;flex-shrink:0;
+  font-family:var(--display);font-weight:700;font-size:13.5px;color:#0A1020;
+  background:linear-gradient(135deg,#7DD3FC,#A78BFA)}
+.hero-stats{display:flex;flex-wrap:wrap;gap:14px;margin-top:40px}
+.stat{border:1px solid rgba(255,255,255,.13);border-radius:14px;padding:16px 22px;
+  background:rgba(255,255,255,.045);backdrop-filter:blur(8px);min-width:150px;}
+.stat b{display:block;font-family:var(--display);font-size:29px;font-weight:700;color:#fff;line-height:1.15}
+.stat span{font-size:12px;color:#93A2BF;letter-spacing:.03em}
+
+/* ============================================================
+   4. 粘性目录 + 章节头
+   ============================================================ */
+nav.toc{position:sticky;top:0;z-index:50;background:rgba(251,252,254,.90);
+  backdrop-filter:blur(14px);border-bottom:1px solid var(--line);}
+nav.toc .wrap{display:flex;gap:6px;overflow-x:auto;padding:11px 30px;scrollbar-width:none}
+nav.toc .wrap::-webkit-scrollbar{display:none}
+nav.toc a{font-family:var(--mono);font-size:12px;color:var(--sub);text-decoration:none;
+  padding:7px 14px;border-radius:8px;white-space:nowrap;transition:.2s;}
+nav.toc a:hover{background:var(--blue-soft);color:var(--blue)}
+nav.toc a.active{background:var(--ink);color:#fff}
+
+section{padding:66px 0 12px;scroll-margin-top:64px}
+.sec-head{display:flex;align-items:flex-start;gap:18px;margin-bottom:34px}
+.sec-num{font-family:var(--display);font-size:44px;font-weight:700;line-height:1;
+  color:transparent;-webkit-text-stroke:1.6px var(--line);flex-shrink:0;padding-top:4px;}
+.sec-head h2{font-family:var(--display);font-size:clamp(23px,3.1vw,31px);font-weight:700;
+  letter-spacing:-.015em;line-height:1.24;color:var(--ink);}
+.sec-head .sub{font-size:13.5px;color:var(--sub);margin-top:7px;font-family:var(--mono);}
+
+/* ============================================================
+   5. 正文排版
+   ============================================================ */
+.prose{max-width:920px}
+.prose p{font-size:15.6px;color:#33405A;margin-bottom:18px}
+.prose p:last-child{margin-bottom:0}
+.prose strong{color:var(--ink);font-weight:600}
+.prose h3{font-family:var(--display);font-size:19px;font-weight:700;margin:36px 0 16px}
+.prose ul,.prose ol{margin:0 0 18px 22px;font-size:15.2px;color:#33405A}
+.prose li{margin-bottom:8px}
+.prose a{color:var(--blue);text-decoration:none;border-bottom:1px solid rgba(37,99,235,.3)}
+.prose a:hover{border-bottom-color:var(--blue)}
+code{font-family:var(--mono);font-size:12.4px;background:#F3F6FB;color:#1E3A8A;
+  padding:1.5px 6px;border-radius:5px;border:1px solid #E4EAF4;}
+
+/* ============================================================
+   6. 栅格与卡片
+   ============================================================ */
+.grid{display:grid;gap:20px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(330px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(268px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;
+  padding:26px 26px 24px;position:relative;transition:.28s cubic-bezier(.2,.7,.3,1);}
+.card:hover{transform:translateY(-3px);box-shadow:0 14px 38px -14px rgba(12,18,32,.16);border-color:#D3DCEB}
+.card h3{font-family:var(--display);font-size:17px;font-weight:700;margin-bottom:11px;
+  display:flex;align-items:center;gap:10px;}
+.card h3 .ico{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
+  font-size:15px;flex-shrink:0;font-family:var(--display);font-weight:700;}
+.card p{font-size:14.5px;color:#3D4A61;line-height:1.78}
+.card .mot{margin-top:15px;padding-top:14px;border-top:1px dashed var(--line);
+  font-size:13.5px;color:var(--sub);}
+.card .mot b{color:var(--ink);font-weight:600}
+
+/* 标签 */
+.tag{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;
+  padding:3px 9px;border-radius:6px;margin:0 5px 6px 0;font-weight:600;}
+.t-blue{background:var(--blue-soft);color:var(--blue)}
+.t-cyan{background:var(--cyan-soft);color:#0891B2}
+.t-amber{background:var(--amber-soft);color:#B45309}
+.t-rose{background:var(--rose-soft);color:var(--rose)}
+.t-violet{background:var(--violet-soft);color:var(--violet)}
+.t-green{background:var(--green-soft);color:#047857}
+
+/* 数字指标条 */
+.kpi{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(176px,1fr));margin:26px 0}
+.kpi div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+.kpi b{display:block;font-family:var(--display);font-size:26px;font-weight:700;line-height:1.15;color:var(--ink)}
+.kpi span{font-family:var(--mono);font-size:12.4px;color:var(--sub)}
+
+/* ============================================================
+   7. 表格
+   ============================================================ */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:16px;background:var(--card)}
+table{width:100%;border-collapse:collapse;font-size:13.6px;min-width:760px}
+thead th{background:linear-gradient(180deg,#F7F9FD,#EFF3FA);color:var(--ink-2);
+  font-family:var(--display);font-weight:700;font-size:12.5px;letter-spacing:.02em;
+  text-align:left;padding:14px 16px;border-bottom:1.5px solid var(--line);white-space:nowrap;}
+tbody td{padding:13px 16px;border-bottom:1px solid var(--line-2);color:#3D4A61;
+  vertical-align:top;line-height:1.66;}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#FAFCFF}
+tbody td:first-child{font-weight:600;color:var(--ink);font-family:var(--display);font-size:13.2px}
+
+/* ============================================================
+   8. 图片 / 引用块 / 提示块
+   ============================================================ */
+figure{margin:30px 0}
+figure img,figure svg{width:100%;display:block;border:1px solid var(--line);
+  border-radius:16px;background:#fff}
+figcaption{font-size:12.8px;color:var(--sub);margin-top:12px;text-align:center;
+  font-family:var(--mono);}
+
+.callout{border-left:3px solid var(--blue);
+  background:linear-gradient(90deg,var(--blue-soft),transparent 78%);
+  border-radius:0 14px 14px 0;padding:20px 24px;margin:26px 0;
+  font-size:14.6px;color:#2A3A55;}
+.callout b{color:var(--ink)}
+.callout.warn{border-left-color:var(--amber);background:linear-gradient(90deg,var(--amber-soft),transparent 78%)}
+.callout.rose{border-left-color:var(--rose);background:linear-gradient(90deg,var(--rose-soft),transparent 78%)}
+.callout.good{border-left-color:var(--green);background:linear-gradient(90deg,var(--green-soft),transparent 78%)}
+
+.quote{position:relative;margin:32px 0;padding:26px 32px 24px 36px;
+  border:1px solid var(--line);border-radius:16px;background:var(--card);overflow:hidden}
+.quote::before{content:"“";position:absolute;left:12px;top:2px;font-family:var(--display);
+  font-size:58px;line-height:1;color:#C9DAFF;}
+.quote p{font-family:var(--display);font-size:17.5px;font-weight:500;line-height:1.78;color:var(--ink-2);position:relative}
+.quote cite{display:block;margin-top:12px;font-family:var(--mono);font-size:12.4px;
+  color:var(--sub);font-style:normal}
+
+/* ============================================================
+   9. 流程条
+   ============================================================ */
+.flow{display:flex;flex-wrap:wrap;gap:0;align-items:stretch;margin:28px 0}
+.flow-step{flex:1;min-width:172px;background:var(--card);border:1px solid var(--line);
+  padding:20px 18px;position:relative;}
+.flow-step:first-child{border-radius:14px 0 0 14px}
+.flow-step:last-child{border-radius:0 14px 14px 0}
+.flow-step:not(:last-child){border-right:none}
+.flow-step .k{font-family:var(--mono);font-size:10.5px;color:var(--faint);
+  letter-spacing:.14em;text-transform:uppercase}
+.flow-step .v{font-family:var(--display);font-weight:700;font-size:14.5px;
+  color:var(--ink);margin:7px 0 6px}
+.flow-step .d{font-size:12.4px;color:var(--sub);line-height:1.6}
+.flow-step::after{content:"";position:absolute;right:-9px;top:50%;
+  transform:translateY(-50%) rotate(45deg);width:16px;height:16px;background:var(--card);
+  border-top:1px solid var(--line);border-right:1px solid var(--line);z-index:3;}
+.flow-step:last-child::after{display:none}
+
+/* ============================================================
+  10. 编号要点列表 / 清单
+   ============================================================ */
+.mot-list{display:grid;gap:12px}
+.mot-item{display:flex;gap:16px;align-items:flex-start;background:var(--card);
+  border:1px solid var(--line);border-radius:13px;padding:17px 20px;transition:.24s;}
+.mot-item:hover{border-color:#CFDAEB;background:#FDFEFF;transform:translateX(4px)}
+.mot-item .n{font-family:var(--display);font-weight:700;font-size:14px;color:#fff;
+  width:28px;height:28px;border-radius:9px;display:grid;place-items:center;
+  flex-shrink:0;margin-top:1px;}
+.mot-item .txt{font-size:14.3px;color:#3D4A61;line-height:1.72}
+.mot-item .txt b{color:var(--ink);font-weight:600}
+
+.checklist{display:grid;gap:10px;margin:20px 0;padding:0}
+.checklist li{list-style:none;display:flex;gap:12px;align-items:flex-start;
+  font-size:14.4px;color:#3D4A61;line-height:1.72}
+.checklist li::before{content:"✓";display:grid;place-items:center;width:19px;height:19px;
+  margin-top:5px;border-radius:6px;background:var(--green-soft);color:#047857;
+  font-size:11px;font-weight:700;flex-shrink:0}
+
+/* ============================================================
+   11. 代码块
+   ============================================================ */
+.codewrap{position:relative;margin:24px 0}
+pre{background:linear-gradient(160deg,#0A1020,#131E3A);border:1px solid #1E2A52;
+  border-radius:14px;padding:22px 24px;overflow-x:auto}
+pre code{background:none;border:none;padding:0;display:block;color:#C7D3E8;
+  font-family:var(--mono);font-size:12.8px;line-height:1.9}
+pre .c{color:#5F7396}
+pre .k{color:#7DD3FC}
+pre .s{color:#A78BFA}
+pre .f{color:#FCD34D}
+.copy{position:absolute;top:12px;right:12px;font-family:var(--mono);font-size:11px;
+  letter-spacing:.06em;color:#93A2BF;background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:5px 11px;cursor:pointer;
+  transition:.2s}
+.copy:hover{color:#fff;background:rgba(125,211,252,.16);border-color:rgba(125,211,252,.4)}
+.copy.done{color:#22D3EE;border-color:rgba(34,211,238,.45)}
+
+/* ============================================================
+   12. LaTeX 公式（KaTeX）
+   —— 行内公式随正文，行间公式复用卡片的描边 / 圆角语言
+   ============================================================ */
+.katex{font-size:1.02em}
+.prose .katex,.card .katex,.mot-item .katex,.callout .katex{color:var(--ink-2)}
+.math-display{position:relative;margin:26px 0;padding:24px 26px;border:1px solid var(--line);
+  border-radius:16px;background:linear-gradient(180deg,#FCFDFF,#F6F9FF);
+  overflow-x:auto;break-inside:avoid}
+.math-display .katex-display{margin:0}
+.math-display .katex{font-size:1.14em}
+.math-display .katex-display>.katex{white-space:normal}
+/* 忘了包 .math-display 时，裸写在段落里的 $$…$$ 也自动获得卡片观感 */
+.prose>.katex-display,.prose p>.katex-display,.callout>.katex-display{
+  margin:22px 0;padding:22px 24px;border:1px solid var(--line);border-radius:16px;
+  background:linear-gradient(180deg,#FCFDFF,#F6F9FF);overflow-x:auto}
+/* 公式渲染失败（离线 / CDN 不可达）时：原始 LaTeX 以等宽源码呈现，仍然可读 */
+html:not(.math-ok) .math-display{font-family:var(--mono);font-size:12.6px;line-height:1.95;
+  color:#1E3A8A;white-space:pre-wrap;background:#F7F9FD}
+html:not(.math-ok) .math-display *{font-family:inherit;white-space:pre-wrap;color:inherit}
+.katex-error{color:var(--rose)!important}
+/* 离线提示条：仅在渲染器不可用时出现 */
+.math-warn{display:none}
+html.math-offline .math-warn{display:block}
+
+/* ============================================================
+   13. 文末：作者卡 / 行动区 / 页脚
+   ============================================================ */
+.author-box{display:flex;gap:18px;align-items:flex-start;background:var(--card);
+  border:1px solid var(--line);border-radius:16px;padding:24px 26px;margin:34px 0}
+.author-box .avatar{width:52px;height:52px;font-size:16px}
+.author-box b{font-family:var(--display);font-size:15.5px;color:var(--ink)}
+.author-box p{font-size:13.9px;color:var(--sub);line-height:1.72;margin-top:6px}
+.cta{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;
+  border:1px solid #D9E4FB;border-radius:16px;padding:24px 28px;margin:26px 0;
+  background:linear-gradient(110deg,var(--blue-soft),var(--violet-soft))}
+.cta p{font-size:14.6px;color:#2A3A55;margin:0;max-width:640px}
+.cta p b{color:var(--ink)}
+.btn{display:inline-block;font-family:var(--display);font-weight:700;font-size:14px;
+  color:#fff;background:var(--ink);padding:11px 22px;border-radius:10px;
+  text-decoration:none;transition:.24s;white-space:nowrap}
+.btn:hover{background:var(--blue);transform:translateY(-1px)}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid #C9D6EE}
+.btn.ghost:hover{background:#fff;color:var(--blue)}
+
+footer{margin-top:70px;padding:34px 0;border-top:1px solid var(--line);
+  background:linear-gradient(180deg,transparent,#F5F8FD);}
+footer .wrap{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center}
+footer p{font-size:12.6px;color:var(--faint);font-family:var(--mono)}
+footer a{color:var(--blue);text-decoration:none;font-weight:600}
+footer a:hover{text-decoration:underline}
+
+/* ============================================================
+   14. 入场动画与响应式
+   ============================================================ */
+.reveal{opacity:0;transform:translateY(22px);
+  transition:opacity .7s cubic-bezier(.2,.7,.3,1),transform .7s cubic-bezier(.2,.7,.3,1)}
+.reveal.on{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .reveal{opacity:1;transform:none;transition:none}
+  .card:hover,.mot-item:hover,.btn:hover{transform:none}
+}
+@media(max-width:720px){
+  .wrap{padding:0 18px}
+  .hero{padding:52px 0 44px}
+  .sec-num{font-size:32px}
+  .flow-step{border-radius:12px!important;border-right:1px solid var(--line)!important}
+  .flow-step::after{display:none}
+  .flow{gap:10px}
+  section{padding:52px 0 8px}
+}
+@media print{
+  nav.toc,.copy,.progress{display:none}
+  .reveal{opacity:1;transform:none}
+  body{background:#fff;background-image:none}
+  .hero{background:#0A1020!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  section{page-break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<!-- 无 JS 环境（或脚本被拦截）时，直接显示全部内容，避免留白 -->
+<noscript><style>.reveal{opacity:1!important;transform:none!important}</style></noscript>
+<div class="progress" id="progress"></div>
+
+<!-- ========== 页头：eyebrow + 主标题 + 导语 + 署名 + 指标 ========== -->
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow"><span class="dot"></span>Blog Template · v1</div>
+    <h1>技术博客模板<br><em>结构 · 组件 · 用法</em></h1>
+    <p class="lede">
+      一份可以直接复用的长文版式：<strong>浅色正文 + 深色页头</strong>，编号章节给出可数的骨架，
+      卡片 / 表格 / 流程 / 引用 / 代码块覆盖常见的技术表达场景，<strong>KaTeX 公式</strong>与正文同源排版。
+      单文件、无需构建，改 <code style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.14);color:#7DD3FC">:root</code> 就能换配色。
+    </p>
+    <div class="byline">
+      <span class="avatar">YL</span>
+      <span>作者名</span>
+      <span class="sep"></span>
+      <span>2026-09-28</span>
+      <span class="sep"></span>
+      <span>约 12 分钟</span>
+      <span class="sep"></span>
+      <span>#设计系统 · #技术写作</span>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><b>8</b><span>编号章节</span></div>
+      <div class="stat"><b>9</b><span>内容组件</span></div>
+      <div class="stat"><b>1</b><span>单个 HTML 文件</span></div>
+      <div class="stat"><b>0</b><span>构建依赖</span></div>
+      <div class="stat"><b>4</b><span>公式定界符</span></div>
+    </div>
+  </div>
+</header>
+
+<!-- ========== 粘性目录：条目与 section id 一一对应 ========== -->
+<nav class="toc">
+  <div class="wrap">
+    <a href="#s1">01 阅读体验</a>
+    <a href="#s2">02 页面骨架</a>
+    <a href="#s3">03 组件清单</a>
+    <a href="#s4">04 写作流程</a>
+    <a href="#s5">05 落地细节</a>
+    <a href="#s6">06 常见坑</a>
+    <a href="#s7">07 公式与 LaTeX</a>
+    <a href="#s8">08 结论</a>
+  </div>
+</nav>
+
+<!-- ========== 01 正文 + 流程条 + 提示块 ========== -->
+<section id="s1">
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <div class="sec-num">01</div>
+      <div>
+        <h2>这套版式在解决什么问题</h2>
+        <div class="sub">Why a layout system instead of a plain article</div>
+      </div>
+    </div>
+    <div class="prose">
+      <p>
+        技术长文最难的不是写，而是<strong>读</strong>。读者往往带着一个问题进来，用十秒钟判断"这篇有没有我要的东西"。
+        纯段落排版把判断成本全压在读者身上；而结构明确的版式，让标题、图表、结论先说话。
+      </p>
+      <p>
+        所以这份模板把"写作"拆成两件事：<strong>内容骨架</strong>（章节怎么排）和<strong>组件选择</strong>（这一节用什么呈现）。
+        你只需要在既定骨架里挑组件填空，版式一致性由 CSS 保证。
+      </p>
+    </div>
+
+    <div class="flow">
+      <div class="flow-step">
+        <div class="k">Step 01</div><div class="v">选题定位</div>
+        <div class="d">一句话说清读者读完能做什么</div>
+      </div>
+      <div class="flow-step">
+        <div class="k">Step 02</div><div class="v">拆章节</div>
+        <div class="d">4–8 个编号章节，每节一个结论</div>
+      </div>
+      <div class="flow-step">
+        <div class="k">Step 03</div><div class="v">挑组件</div>
+        <div class="d">对比用表格，因果用流程图</div>
+      </div>
+      <div class="flow-step">
+        <div class="k">Step 04</div><div class="v">填正文</div>
+        <div class="d">卡片写要点，段落写推理</div>
+      </div>
+      <div class="flow-step">
+        <div class="k">Step 05</div><div class="v">校对发布</div>
+        <div class="d">检查锚点、图注、打印样式</div>
+      </div>
+    </div>
+
+    <div class="callout warn">
+      <b>最容易踩的坑：把版式当成内容。</b>
+      卡片多了会显得零碎，强调色多了会互相抵消。一节的视觉重点最好只有一个——
+      要么一张表，要么一个流程图，其余的交给正文。
+    </div>
+  </div>
+</section>
+
+<!-- ========== 02 卡片网格 g3 + 线框示意图 ========== -->
+<section id="s2">
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <div class="sec-num">02</div>
+      <div>
+        <h2>页面骨架：五个层次</h2>
+        <div class="sub">Hero → TOC → Section → Figure → Footer</div>
+      </div>
+    </div>
+    <div class="grid g3">
+      <div class="card">
+        <h3><span class="ico" style="background:var(--blue-soft);color:var(--blue)">◈</span>深色页头</h3>
+        <p>全页唯一的深色区块，承担标题、导语、署名与关键指标。深色只出现一次，才有分量。</p>
+        <div class="mot"><b>要点：</b>标题里的关键词用渐变字，其余保持白色。</div>
+      </div>
+      <div class="card">
+        <h3><span class="ico" style="background:var(--cyan-soft);color:var(--cyan)">◈</span>粘性目录</h3>
+        <p>等宽小字的横向导航，滚动到哪一节就高亮哪一节，随时知道自己在哪。</p>
+        <div class="mot"><b>要点：</b>锚点、目录、<code>id</code> 三者保持一致。</div>
+      </div>
+      <div class="card">
+        <h3><span class="ico" style="background:var(--violet-soft);color:var(--violet)">◈</span>编号章节</h3>
+        <p>描边空心数字 + 主标题 + 等宽英文副标题，形成稳定的阅读节奏。</p>
+        <div class="mot"><b>要点：</b>章节数控制在 4–8 个。</div>
+      </div>
+      <div class="card">
+        <h3><span class="ico" style="background:var(--amber-soft);color:var(--amber)">◈</span>内容组件</h3>
+        <p>卡片、表格、流程条、提示块、引用、代码块，六种容器覆盖绝大多数表达需求。</p>
+        <div class="mot"><b>要点：</b>同类信息用同类容器，形成读者预期。</div>
+      </div>
+      <div class="card">
+        <h3><span class="ico" style="background:var(--rose-soft);color:var(--rose)">◈</span>图文区</h3>
+        <p>图示与截图统一 1px 描边、16px 圆角、居中等宽图注，视觉重量一致。</p>
+        <div class="mot"><b>要点：</b>图注写"这张图说明了什么"，而不是重复标题。</div>
+      </div>
+      <div class="card">
+        <h3><span class="ico" style="background:var(--green-soft);color:var(--green)">◈</span>页脚与署名</h3>
+        <p>作者信息、更新时间、原文链接集中在结尾，同时兼作打印页脚。</p>
+        <div class="mot"><b>要点：</b>一处留联系方式就够了。</div>
+      </div>
+    </div>
+
+    <!-- 图示占位：换成自己的截图 / 导出图即可 -->
+    <figure>
+      <svg viewBox="0 0 1000 400" role="img" aria-label="页面骨架线框图：页头、目录、章节卡片、图注、页脚">
+        <defs>
+          <linearGradient id="heroGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#0A1020"/>
+            <stop offset="46%" stop-color="#131E3A"/>
+            <stop offset="100%" stop-color="#1E2A52"/>
+          </linearGradient>
+        </defs>
+        <rect width="1000" height="400" fill="#fff"/>
+        <!-- hero -->
+        <rect x="40" y="24" width="920" height="104" rx="14" fill="url(#heroGrad)"/>
+        <rect x="68" y="46" width="112" height="18" rx="9" fill="rgba(125,211,252,.16)" stroke="rgba(125,211,252,.4)"/>
+        <text x="124" y="59" font-family="monospace" font-size="10" fill="#7DD3FC" text-anchor="middle">EYEBROW</text>
+        <rect x="68" y="78" width="300" height="14" rx="7" fill="#EAF1FF" opacity=".85"/>
+        <rect x="68" y="98" width="196" height="10" rx="5" fill="#7C3AED" opacity=".55"/>
+        <rect x="500" y="46" width="120" height="46" rx="10" fill="rgba(255,255,255,.07)" stroke="rgba(255,255,255,.16)"/>
+        <rect x="640" y="46" width="120" height="46" rx="10" fill="rgba(255,255,255,.07)" stroke="rgba(255,255,255,.16)"/>
+        <rect x="780" y="46" width="152" height="46" rx="10" fill="rgba(255,255,255,.07)" stroke="rgba(255,255,255,.16)"/>
+        <rect x="512" y="60" width="52" height="9" rx="4" fill="#fff" opacity=".75"/>
+        <rect x="652" y="60" width="52" height="9" rx="4" fill="#fff" opacity=".75"/>
+        <rect x="792" y="60" width="72" height="9" rx="4" fill="#fff" opacity=".75"/>
+        <!-- toc -->
+        <rect x="40" y="142" width="920" height="34" rx="10" fill="#F7F9FD" stroke="#E3E8F0"/>
+        <rect x="58" y="153" width="72" height="12" rx="6" fill="#2563EB" opacity=".8"/>
+        <rect x="144" y="153" width="72" height="12" rx="6" fill="#E3E8F0"/>
+        <rect x="230" y="153" width="72" height="12" rx="6" fill="#E3E8F0"/>
+        <rect x="316" y="153" width="72" height="12" rx="6" fill="#E3E8F0"/>
+        <text x="946" y="164" font-family="monospace" font-size="10" fill="#8B96AC" text-anchor="end">STICKY</text>
+        <!-- section head -->
+        <text x="40" y="222" font-family="Georgia,serif" font-size="30" fill="none" stroke="#C9D4E4" stroke-width="1.4">02</text>
+        <rect x="92" y="198" width="230" height="16" rx="8" fill="#1B2438" opacity=".82"/>
+        <rect x="92" y="222" width="150" height="8" rx="4" fill="#C9D4E4"/>
+        <!-- cards -->
+        <rect x="40" y="252" width="288" height="86" rx="12" fill="#fff" stroke="#E3E8F0"/>
+        <rect x="60" y="272" width="26" height="26" rx="8" fill="#EAF1FF"/>
+        <rect x="96" y="278" width="120" height="12" rx="6" fill="#1B2438" opacity=".75"/>
+        <rect x="60" y="308" width="240" height="8" rx="4" fill="#E3E8F0"/>
+        <rect x="356" y="252" width="288" height="86" rx="12" fill="#fff" stroke="#E3E8F0"/>
+        <rect x="376" y="272" width="26" height="26" rx="8" fill="#E4FAFE"/>
+        <rect x="412" y="278" width="120" height="12" rx="6" fill="#1B2438" opacity=".75"/>
+        <rect x="376" y="308" width="240" height="8" rx="4" fill="#E3E8F0"/>
+        <rect x="672" y="252" width="288" height="86" rx="12" fill="#fff" stroke="#E3E8F0"/>
+        <rect x="692" y="272" width="26" height="26" rx="8" fill="#F3EDFF"/>
+        <rect x="728" y="278" width="120" height="12" rx="6" fill="#1B2438" opacity=".75"/>
+        <rect x="692" y="308" width="240" height="8" rx="4" fill="#E3E8F0"/>
+        <!-- caption + footer -->
+        <rect x="380" y="352" width="240" height="8" rx="4" fill="#EEF2F8"/>
+        <line x1="40" y1="376" x2="960" y2="376" stroke="#E3E8F0"/>
+        <rect x="40" y="384" width="150" height="8" rx="4" fill="#EEF2F8"/>
+        <rect x="810" y="384" width="150" height="8" rx="4" fill="#EEF2F8"/>
+      </svg>
+      <figcaption>图 1 · 页面骨架：深色页头 → 粘性目录 → 编号章节 → 图示 → 页脚（示意，替换为你的图）</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ========== 03 指标条 + 组件对照表 ========== -->
+<section id="s3">
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <div class="sec-num">03</div>
+      <div>
+        <h2>组件清单：什么信息用什么容器</h2>
+        <div class="sub">Pick the container, keep the voice</div>
+      </div>
+    </div>
+    <p class="prose" style="margin-bottom:6px">
+      组件不是装饰，而是<strong>语义标签</strong>：读者看到表格就知道要横向比较，看到提示块就知道是边界条件。
+    </p>
+
+    <div class="kpi">
+      <div><b>7</b><span>核心内容组件</span></div>
+      <div><b>3</b><span>提示块语义</span></div>
+      <div><b>1</b><span>强调色系</span></div>
+      <div><b>2</b><span>栅格断点</span></div>
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>组件</th><th>类名</th><th>适合表达</th><th>不适合</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>正文段落</td><td><code>.prose p</code></td><td>推理、背景、因果关系</td><td>并列清单、参数对照</td></tr>
+          <tr><td>卡片网格</td><td><code>.grid.g2 / .g3</code></td><td>要点并列、概念定义</td><td>需要严格对比的数值</td></tr>
+          <tr><td>表格</td><td><code>.tbl-wrap &gt; table</code></td><td>多列对比、选型、参数表</td><td>超过 5 列且字段很长</td></tr>
+          <tr><td>流程条</td><td><code>.flow .flow-step</code></td><td>线性步骤、pipeline</td><td>有分支或回环的流程</td></tr>
+          <tr><td>提示块</td><td><code>.callout[.warn/.rose/.good]</code></td><td>结论、风险、边界条件</td><td>大段正文</td></tr>
+          <tr><td>引用块</td><td><code>.quote</code></td><td>一句话核心论点</td><td>需要论证的复杂结论</td></tr>
+          <tr><td>公式卡片</td><td><code>.math-display</code></td><td>定义、推导、可编号公式</td><td>短符号（用行内 <code>$…$</code>）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+      <h3 style="font-size:15.5px"><span class="ico" style="background:var(--blue-soft);color:var(--blue)">#</span>标签：六种语义色</h3>
+      <div style="margin-top:2px">
+        <span class="tag t-blue">主强调</span><span class="tag t-cyan">对比</span><span class="tag t-amber">注意</span>
+        <span class="tag t-rose">风险</span><span class="tag t-violet">进阶</span><span class="tag t-green">结论</span>
+      </div>
+      <div class="mot"><b>用法：</b><code>.tag</code> 搭配 <code>.t-blue / .t-cyan / .t-amber / .t-rose / .t-violet / .t-green</code>，
+        放在卡片标题下方、正文之前，用颜色标注内容的性质。</div>
+    </div>
+
+    <div class="quote">
+      <p>版式的作用不是让文章变好看，而是让读者在三十秒内知道该读哪一段。</p>
+      <cite>—— 模板设计原则</cite>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 04 编号要点列表 ========== -->
+<section id="s4">
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <div class="sec-num">04</div>
+      <div>
+        <h2>从大纲到成文的五步</h2>
+        <div class="sub">Outline → Components → Draft → Verify</div>
+      </div>
+    </div>
+    <div class="mot-list">
+      <div class="mot-item">
+        <div class="n" style="background:var(--blue)">1</div>
+        <div class="txt"><b>先写结论文，再写开篇。</b>每节先落一句"这节要证明什么"，再补论证与例子。没有结论的段落，多数是可以在编辑时删掉的。</div>
+      </div>
+      <div class="mot-item">
+        <div class="n" style="background:var(--cyan)">2</div>
+        <div class="txt"><b>把"对比"翻译成表格。</b>凡是出现三处以上"而 X 则……"的段落，改写成表格通常更短也更清楚。</div>
+      </div>
+      <div class="mot-item">
+        <div class="n" style="background:var(--violet)">3</div>
+        <div class="txt"><b>把"顺序"翻译成流程条。</b>五步以内的线性过程横向铺开，读者一次就能看全。</div>
+      </div>
+      <div class="mot-item">
+        <div class="n" style="background:var(--amber)">4</div>
+        <div class="txt"><b>风险单独成块。</b>失败条件、已知限制、"不要这么做"放在 <code>.callout.rose</code> 或 <code>.warn</code> 里，避免淹在正文中。</div>
+      </div>
+      <div class="mot-item">
+        <div class="n" style="background:var(--green)">5</div>
+        <div class="txt"><b>最后跑一遍锚点。</b>目录每一项都能跳到目标章节，页面在窄屏和打印视图下都不塌。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 05 代码块 + 提示块 + 清单 ========== -->
+<section id="s5">
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <div class="sec-num">05</div>
+      <div>
+        <h2>落地细节：复制即用</h2>
+        <div class="sub">Single file · No build · Print friendly</div>
+      </div>
+    </div>
+    <div class="prose">
+      <p>
+        下面是最常用的一张卡片。把 <code>style</code> 里的两个颜色变量换成蓝 / 青 / 紫 / 琥珀 / 绿，
+        就得到不同语义的卡片，不需要新增 CSS。
+      </p>
+    </div>
+
+    <div class="codewrap">
+      <button class="copy" type="button">复制</button>
+      <pre><code><span class="c">&lt;!-- 一张卡片：图标 + 标题 + 标签 + 正文 + 结论 --&gt;</span>
+&lt;<span class="k">div</span> <span class="f">class</span>=<span class="s">"grid g2"</span>&gt;
+  &lt;<span class="k">div</span> <span class="f">class</span>=<span class="s">"card"</span>&gt;
+    &lt;<span class="k">h3</span>&gt;
+      &lt;<span class="k">span</span> <span class="f">class</span>=<span class="s">"ico"</span> <span class="f">style</span>=<span class="s">"background:var(--blue-soft);color:var(--blue)"</span>&gt;A&lt;/<span class="k">span</span>&gt;
+      标题
+    &lt;/<span class="k">h3</span>&gt;
+    &lt;<span class="k">div</span>&gt;&lt;<span class="k">span</span> <span class="f">class</span>=<span class="s">"tag t-blue"</span>&gt;标签&lt;/<span class="k">span</span>&gt;&lt;/<span class="k">div</span>&gt;
+    &lt;<span class="k">p</span>&gt;正文，一段话讲清一件事。&lt;/<span class="k">p</span>&gt;
+    &lt;<span class="k">div</span> <span class="f">class</span>=<span class="s">"mot"</span>&gt;&lt;<span class="k">b</span>&gt;结论：&lt;/<span class="k">b</span>&gt;一句话收口。&lt;/<span class="k">div</span>&gt;
+  &lt;/<span class="k">div</span>&gt;
+&lt;/<span class="k">div</span>&gt;</code></pre>
+    </div>
+
+    <div class="callout good">
+      <b>零构建：</b>整份文件只有一个 HTML，样式与脚本内联，放进静态站点、邮件附件或本地打开都能正常渲染。
+      外部只有两处 CDN：三款字体（Space Grotesk / JetBrains Mono / Noto Sans SC）与公式引擎 KaTeX——
+      字体离线自动回退到系统字体，公式则降级成 LaTeX 源码，见 07 章节。
+    </div>
+
+    <ul class="checklist">
+      <li>换配色：只改 <code>:root</code> 里的色板变量。</li>
+      <li>换字体：改 <code>--display</code> / <code>--mono</code> / <code>--sans</code> 三个变量，并同步替换字体链接。</li>
+      <li>加章节：复制一个 <code>&lt;section&gt;</code>，同步改 <code>id</code> 和目录链接。</li>
+      <li>不需要的模块：直接删，剩下的不会走形。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ========== 06 风险提示 ========== -->
+<section id="s6">
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <div class="sec-num">06</div>
+      <div>
+        <h2>常见坑与取舍</h2>
+        <div class="sub">What breaks the layout</div>
+      </div>
+    </div>
+    <div class="callout rose">
+      <b>窄屏表格会横向溢出。</b>
+      表格最小宽度约 760px，四列以上在手机上需要横向滚动。列很多时，优先拆成两张表，或把次要列移进卡片。
+    </div>
+    <div class="callout warn">
+      <b>强调色不要混用。</b>
+      同一节里出现三种以上语义色，读者就无法判断哪个才是重点。整篇建议只有一种"主强调色"，其余颜色只用于风险与结论。
+    </div>
+    <div class="callout">
+      <b>动画要能降级。</b>
+      入场动画依赖 <code>IntersectionObserver</code>；脚本不可用时全部内容直接显示（本模板已做兜底），打印视图同样关闭动画。
+    </div>
+  </div>
+</section>
+
+<!-- ========== 07 公式与 LaTeX：行内 / 行间 / 多行 / 矩阵 / 源码对照 ========== -->
+<section id="s7">
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <div class="sec-num">07</div>
+      <div>
+        <h2>公式与 LaTeX</h2>
+        <div class="sub">KaTeX · inline math · display math · \tag{n} · offline fallback</div>
+      </div>
+    </div>
+
+    <!-- 仅在 KaTeX 未加载（离线 / CDN 不可达）时显示 -->
+    <div class="callout rose math-warn">
+      <b>公式未渲染：渲染器没加载成功。</b>
+      页面已自动降级——公式位置显示等宽 LaTeX 源码，版式不塌。联网刷新即可恢复；
+      需要彻底离线，见本节最后一段的三步替换。
+    </div>
+
+    <div class="prose">
+      <p>
+        模板内置 <strong>KaTeX</strong> 做公式渲染，并让它复用正文的描边与圆角语言：行内公式跟随正文基线，
+        行间公式自动变成一张公式卡片，窄屏下横向滚动而不是撑破版心。写法与 Markdown 数学块一致，共四种定界符。
+      </p>
+      <p>
+        行内公式直接写在句子里：注意力机制的复杂度是 $O(n^{2}d)$，状态空间模型把它压到 $O(nd)$；
+        超参数也照写不误，例如学习率 $\eta = 3\times 10^{-4}$、批大小 $B = 64$、
+        维度 $d_{\text{model}} = 512$。公式与中文混排时，基线由 KaTeX 自己对齐，不需要手工调行高。
+      </p>
+    </div>
+
+    <!-- 行间公式 · 带编号 -->
+    <div class="math-display">$$
+\mathcal{L}_{\text{FM}}(\theta)
+= \mathbb{E}_{t,x_0,x_1}\Big\|\, v_\theta(x_t,t) - (x_1 - x_0) \,\Big\|_2^{2},
+\qquad x_t = (1-t)\,x_0 + t\,x_1 \tag{1}
+$$</div>
+
+    <!-- 多行对齐 -->
+    <div class="math-display">$$
+\begin{aligned}
+\operatorname{Attn}(Q,K,V) &= \operatorname{softmax}\!\left(\frac{QK^{\top}}{\sqrt{d_k}}\right)V \\[2pt]
+\hat{y} &= W_o \operatorname{Attn}(Q,K,V) + b_o
+\end{aligned} \tag{2}
+$$</div>
+
+    <!-- 分段函数 + 矩阵：两张公式卡片并排 -->
+    <div class="grid g2">
+      <div class="math-display">$$
+\text{valid}(M) =
+\begin{cases}
+1, & \delta(M) \le \varepsilon \\[2pt]
+0, & \delta(M) > \varepsilon
+\end{cases} \tag{3}
+$$</div>
+      <div class="math-display">$$
+J = \begin{bmatrix}
+\dfrac{\partial f_1}{\partial x_1} & \cdots & \dfrac{\partial f_1}{\partial x_n} \\[4pt]
+\vdots & \ddots & \vdots \\[4pt]
+\dfrac{\partial f_m}{\partial x_1} & \cdots & \dfrac{\partial f_m}{\partial x_n}
+\end{bmatrix} \tag{4}
+$$</div>
+    </div>
+
+    <div class="prose">
+      <p>
+        重复出现的记号可以注册成<strong>宏</strong>，模板预置了 $\RR$（实数集）、$\dd$（微分算子）与 $\argmax$：
+        写成 $\dd\mathcal{L}/\dd\theta$ 与 $\theta^{\star} = \argmax_{\theta}\mathcal{L}(\theta)$，
+        比每次都敲 <code>\mathbb{R}</code>、<code>\operatorname*{arg\,max}</code> 省事得多。
+        宏定义在页面底部的 <code>macros</code> 里，随项目习惯增删。
+      </p>
+    </div>
+
+    <!-- 源码对照：pre / code 内的 $ 不会被渲染 -->
+    <div class="codewrap">
+      <button class="copy" type="button">复制</button>
+      <pre><code><span class="c">&lt;!-- 行内：写在正文里，跟随基线 --&gt;</span>
+复杂度从 $O(n^{2}d)$ 降到 $O(nd)$，学习率取 $\eta = 3\times 10^{-4}$。
+
+<span class="c">&lt;!-- 行间：单独一个 div，自动变成公式卡片 --&gt;</span>
+&lt;<span class="k">div</span> <span class="f">class</span>=<span class="s">"math-display"</span>&gt;$$
+\hat{y} = \operatorname{softmax}\!\left(\frac{QK^{\top}}{\sqrt{d_k}}\right)V \tag{2}
+$$&lt;/<span class="k">div</span>&gt;</code></pre>
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>写法</th><th>渲染结果</th><th>使用场景</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>$…$</code></td><td>行内公式，跟随正文基线</td><td>变量、符号、短表达式</td></tr>
+          <tr><td><code>\(…\)</code></td><td>行内公式（LaTeX 原生写法）</td><td>与 Markdown 混排时更安全</td></tr>
+          <tr><td><code>$$…$$</code> / <code>\[…\]</code></td><td>行间公式，居中独立成行</td><td>完整公式、带编号</td></tr>
+          <tr><td><code>\tag{1}</code></td><td>公式右侧自动编号</td><td>正文需要引用某个式子</td></tr>
+          <tr><td><code>aligned</code> · <code>cases</code> · <code>bmatrix</code></td><td>多行推导 / 分段函数 / 矩阵</td><td>推导过程与线性代数</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout warn">
+      <b>两条容易踩的线。</b>
+      ① 行内 <code>$</code> 与货币符号冲突：写"售价 $100"要转义成 <code>\$100</code>，否则会被当成公式起点；
+      ② KaTeX 只实现 LaTeX 数学子集——<code>\begin{align}</code> 要写成 <code>aligned</code>，
+      <code>\label</code> / <code>\ref</code> 交叉引用不可用（用 <code>\tag</code> 加手写锚点代替）。
+      需要完整 LaTeX 生态时，把三个 CDN 地址换成 MathJax 即可，样式不用改。
+    </div>
+
+    <ul class="checklist">
+      <li><code>pre</code> / <code>code</code> / <code>script</code> 内的 <code>$</code> 不会被渲染，贴代码无需转义。</li>
+      <li>渲染失败时自动加 <code>html.math-offline</code>，公式降级为等宽源码并显示上面的提示条。</li>
+      <li>公式渲染完成会自动重算目录高亮与阅读进度，长页面不会错位。</li>
+    </ul>
+
+    <div class="callout good">
+      <b>三步改成完全离线：</b>
+      ① <code>npm i katex</code> 或直接下载 <code>dist/</code> 目录；
+      ② 把 head 里的 <code>katex.min.css</code> 与页尾两个 <code>.js</code> 换成本地相对路径；
+      ③ 保留同级的 <code>fonts/</code> 目录，字体加载同样不走 CDN。
+    </div>
+  </div>
+</section>
+
+<!-- ========== 08 结论卡片 + 文末信息 ========== -->
+<section id="s8">
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <div class="sec-num">08</div>
+      <div>
+        <h2>结论</h2>
+        <div class="sub">Three things worth keeping</div>
+      </div>
+    </div>
+    <div class="grid g2">
+      <div class="card">
+        <h3><span class="ico" style="background:var(--blue-soft);color:var(--blue)">1</span>结构先于装饰</h3>
+        <p>编号章节 + 每节一个结论，是长文可读性的下限保障。装饰只负责让结构被看见。</p>
+        <div class="mot"><b>实践：</b>写完大纲再挑组件。</div>
+      </div>
+      <div class="card">
+        <h3><span class="ico" style="background:var(--green-soft);color:var(--green)">2</span>组件即语义</h3>
+        <p>表格、流程、提示块各有明确含义，混用会让读者失去定位感。</p>
+        <div class="mot"><b>实践：</b>对比用表，顺序用流程，风险用提示块。</div>
+      </div>
+    </div>
+
+    <div class="author-box">
+      <span class="avatar">YL</span>
+      <div>
+        <b>作者名</b>
+        <p>这里写一两句作者信息：关注方向、联系方式、往期文章入口。保持简短，一处即可。</p>
+      </div>
+    </div>
+
+    <div class="cta">
+      <p><b>把这篇模板拿去用：</b>替换正文、改掉色板，就是一篇结构完整的博客。</p>
+      <a class="btn" href="#s1">回到开头</a>
+      <a class="btn ghost" href="#">订阅更新</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>技术博客模板 · test.html · 整理时间 2026-09</p>
+    <p>Powered by <a href="#" target="_blank" rel="noopener">your-blog.dev</a> · 公式引擎 KaTeX 0.18.9 · 可换本地文件</p>
+  </div>
+</footer>
+
+<!-- LaTeX 渲染引擎：KaTeX core + auto-render（顺序不能颠倒；defer 保证不阻塞首屏） -->
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.18.9/dist/katex.min.js"
+        onerror="document.documentElement.classList.add('math-offline')"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.18.9/dist/contrib/auto-render.min.js"
+        onload="window.__renderMath && window.__renderMath()"
+        onerror="document.documentElement.classList.add('math-offline')"></script>
+
+<script>
+(function(){
+  /* 1. 入场动画（无 IntersectionObserver 时直接显示） */
+  var els = document.querySelectorAll('.reveal');
+  if(!('IntersectionObserver' in window)){
+    for(var i=0;i<els.length;i++){els[i].classList.add('on');}
+  }else{
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if(en.isIntersecting){ en.target.classList.add('on'); io.unobserve(en.target); }
+      });
+    }, {threshold:0.08, rootMargin:'0px 0px -40px 0px'});
+    for(var j=0;j<els.length;j++){io.observe(els[j]);}
+    /* 直接以 #锚点 打开、或浏览器恢复滚动位置时，IO 的首次回调可能已经错过，
+       这里在 load / hashchange 后兜底扫一遍视口内的区块 */
+    var sweep = function(){
+      for(var k=0;k<els.length;k++){
+        var r = els[k].getBoundingClientRect();
+        if(r.top < window.innerHeight - 40 && r.bottom > 0){ els[k].classList.add('on'); }
+      }
+    };
+    window.addEventListener('load', sweep);
+    window.addEventListener('hashchange', sweep);
+    setTimeout(sweep, 400);
+  }
+
+  /* 2. 阅读进度条 */
+  var bar = document.getElementById('progress');
+  /* 3. 目录高亮 */
+  var links = [].slice.call(document.querySelectorAll('nav.toc a[href^="#"]'));
+  var secs  = links.map(function(a){ return document.querySelector(a.getAttribute('href')); });
+  function onScroll(){
+    var doc = document.documentElement;
+    var max = doc.scrollHeight - window.innerHeight;
+    if(bar) bar.style.width = (max > 0 ? (window.scrollY / max) * 100 : 0) + '%';
+    var y = window.scrollY + 140, act = -1;
+    for(var k=0;k<secs.length;k++){
+      if(secs[k] && secs[k].offsetTop <= y) act = k;
+    }
+    links.forEach(function(a,idx){ a.classList.toggle('active', idx === act); });
+  }
+  var ticking = false;
+  window.addEventListener('scroll', function(){
+    if(ticking) return;
+    ticking = true;
+    requestAnimationFrame(function(){ onScroll(); ticking = false; });
+  }, {passive:true});
+  window.addEventListener('resize', onScroll);
+  onScroll();
+
+  /* 4. 代码块一键复制 */
+  document.querySelectorAll('.codewrap').forEach(function(wrap){
+    var btn = wrap.querySelector('.copy'), code = wrap.querySelector('code');
+    if(!btn || !code) return;
+    btn.addEventListener('click', function(){
+      var text = code.innerText;
+      var done = function(){ btn.textContent = '已复制'; btn.classList.add('done');
+        setTimeout(function(){ btn.textContent = '复制'; btn.classList.remove('done'); }, 1600); };
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(done, done);
+      }else{
+        var ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        try{ document.execCommand('copy'); }catch(e){}
+        document.body.removeChild(ta); done();
+      }
+    });
+  });
+
+  /* 5. LaTeX 公式渲染（KaTeX auto-render） */
+  window.__renderMath = function(){
+    if(typeof window.renderMathInElement !== 'function') return;   // 引擎没到位，等兜底
+    try{
+      renderMathInElement(document.body, {
+        delimiters:[
+          {left:'$$', right:'$$', display:true},
+          {left:'\\[', right:'\\]', display:true},
+          {left:'\\(', right:'\\)', display:false},
+          {left:'$',  right:'$',  display:false}
+        ],
+        /* 代码块与脚本不参与渲染，贴 LaTeX 源码不用转义 */
+        ignoredTags:['script','noscript','style','textarea','pre','code','option','svg'],
+        throwOnError:false,          // 写错一个命令不至于整页报错
+        errorColor:'#E11D48',        // 错误的公式标红，方便定位
+        strict:false,
+        macros:{                     // 自定义宏：按项目习惯增删
+          '\\RR':'\\mathbb{R}',
+          '\\dd':'\\mathrm{d}',
+          '\\argmax':'\\operatorname*{arg\\,max}'
+        }
+      });
+      document.documentElement.classList.add('math-ok');
+      document.documentElement.classList.remove('math-offline');
+    }catch(e){
+      document.documentElement.classList.add('math-offline');
+    }
+    onScroll();                    // 公式撑高页面后重算目录高亮与进度条
+  };
+
+  /* 兜底：4 秒内没拿到渲染器就切到源码视图，避免半渲染的空白 */
+  setTimeout(function(){
+    if(!document.documentElement.classList.contains('math-ok')){
+      document.documentElement.classList.add('math-offline');
+    }
+  }, 4000);
+})();
+</script>
+</body>
+</html>
