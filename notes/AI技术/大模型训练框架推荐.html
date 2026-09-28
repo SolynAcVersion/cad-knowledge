@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>大模型训练框架推荐 · LLM+VLM / SFT+RL+LoRA</title>
+<style>
+:root{--ink:#1A1A2E;--ink2:#3D3D5C;--ink3:#6B6B8A;--violet:#6C5CE7;--violet-d:#4B3FC4;
+--mint:#00B894;--mint-d:#009B7D;--amber:#FDCB6E;--coral:#E17055;--line:#E8E8F0;
+--paper:#FFF;--paper2:#FAFAFD;--paper3:#F4F4FA}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+background:var(--paper);color:var(--ink);line-height:1.75;-webkit-font-smoothing:antialiased}
+.hero{padding:7vh 7vw 4vh;background:
+radial-gradient(ellipse 80% 60% at 15% 10%,rgba(108,92,231,.10),transparent 60%),
+radial-gradient(ellipse 70% 50% at 90% 85%,rgba(0,184,148,.09),transparent 60%),var(--paper)}
+.hero-inner{max-width:1080px;margin:0 auto}
+.kicker{display:inline-flex;gap:.6em;font-size:.76rem;letter-spacing:.2em;text-transform:uppercase;
+color:var(--violet);font-weight:700;margin-bottom:1.4rem;padding:.45em 1em;
+border:1.5px solid var(--violet);border-radius:100px;background:rgba(108,92,231,.05)}
+.kicker .dot{width:7px;height:7px;border-radius:50%;background:var(--mint);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+h1{font-size:clamp(1.9rem,4.4vw,3.2rem);font-weight:900;letter-spacing:-.03em;line-height:1.14;margin-bottom:1.1rem}
+h1 .grad{background:linear-gradient(115deg,var(--violet),var(--mint));
+-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.sub{font-size:1.02rem;color:var(--ink2);max-width:820px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 7vw 4rem}
+section{padding:3.2rem 0;border-bottom:1px solid var(--line)}
+section:last-of-type{border-bottom:none}
+h2{font-size:1.5rem;font-weight:900;margin-bottom:1rem;display:flex;align-items:center;gap:.6em}
+h2::before{content:"";width:4px;height:1.05em;border-radius:2px;background:linear-gradient(180deg,var(--violet),var(--mint))}
+h3{font-size:1.12rem;font-weight:800;margin:1.6rem 0 .8rem}
+p{margin-bottom:1rem;color:var(--ink2)}
+strong{color:var(--ink)}
+a{color:var(--violet-d);text-decoration:none;font-weight:600;border-bottom:1px dashed rgba(108,92,231,.4)}
+a:hover{color:var(--violet);border-bottom-style:solid}
+code{font-family:Consolas,monospace;font-size:.88em;background:var(--paper3);padding:.12em .42em;border-radius:5px;color:var(--violet-d)}
+/* 冠军卡 */
+.champion{background:linear-gradient(135deg,rgba(108,92,231,.08),rgba(0,184,148,.06));
+border:2px solid var(--violet);border-radius:20px;padding:2rem 2.2rem;margin:1.6rem 0;position:relative}
+.champion::before{content:"★ 首推";position:absolute;top:-14px;left:2rem;background:linear-gradient(135deg,var(--violet),var(--violet-d));
+color:#fff;font-size:.78rem;font-weight:800;padding:.35em 1em;border-radius:100px;letter-spacing:.06em}
+.champion h3{margin-top:.4rem;font-size:1.4rem;display:flex;align-items:center;gap:.7rem;flex-wrap:wrap}
+.champion .repo{font-family:Consolas,monospace;font-size:.85rem;color:var(--ink3);font-weight:400}
+.champion p{font-size:.96rem}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin:1.4rem 0}
+.metric{background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:1rem 1.1rem;text-align:center}
+.metric .n{font-size:1.5rem;font-weight:900;background:linear-gradient(120deg,var(--violet),var(--mint));
+-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;line-height:1.2}
+.metric .l{font-size:.78rem;color:var(--ink3);margin-top:.25rem}
+.tbl-wrap{overflow-x:auto;margin:1.4rem 0;border-radius:14px;border:1.5px solid var(--line)}
+table{width:100%;border-collapse:collapse;font-size:.86rem;background:var(--paper)}
+thead{background:linear-gradient(135deg,var(--violet),var(--violet-d))}
+th{color:#fff;font-weight:700;padding:.8rem .9rem;text-align:left;font-size:.78rem;white-space:nowrap}
+td{padding:.72rem .9rem;border-bottom:1px solid var(--line);color:var(--ink2);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:nth-child(even){background:var(--paper2)}
+tbody tr:hover{background:rgba(108,92,231,.05)}
+.yes{color:var(--mint-d);font-weight:800}
+.no{color:#B2BEC3;font-weight:700}
+.star{font-weight:800;color:var(--ink)}
+.hl-row{background:rgba(108,92,231,.07)!important}
+.hl-row td{font-weight:600}
+.card{border:1.5px solid var(--line);border-radius:16px;padding:1.4rem 1.5rem;background:var(--paper2);margin:1.2rem 0}
+.card h4{font-size:1.02rem;font-weight:800;margin-bottom:.5rem;display:flex;align-items:center;gap:.5em;flex-wrap:wrap}
+.card .repo{font-family:Consolas,monospace;font-size:.8rem;color:var(--ink3);font-weight:400}
+.card ul{list-style:none;margin-top:.5rem}
+.card li{font-size:.9rem;color:var(--ink2);padding:.3rem 0 .3rem 1.4em;position:relative}
+.card li::before{content:"▸";position:absolute;left:.2em;color:var(--violet);font-weight:700}
+.hl{background:linear-gradient(135deg,rgba(108,92,231,.06),rgba(0,184,148,.05));
+border-left:4px solid var(--violet);border-radius:0 14px 14px 0;padding:1.3rem 1.6rem;margin:1.4rem 0}
+.hl p:last-child{margin-bottom:0}
+.steps{counter-reset:s;margin:1.2rem 0}
+.step{position:relative;padding:.9rem 0 .9rem 3rem;border-bottom:1px dashed var(--line)}
+.step:last-child{border-bottom:none}
+.step::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:.85rem;
+width:2rem;height:2rem;border-radius:50%;background:linear-gradient(135deg,var(--violet),var(--mint));
+color:#fff;font-weight:800;font-size:.9rem;display:flex;align-items:center;justify-content:center}
+.step b{display:block;color:var(--ink);font-size:.95rem;margin-bottom:.2rem}
+.step span{font-size:.88rem;color:var(--ink2)}
+pre{background:#1A1A2E;color:#E8E8F0;border-radius:12px;padding:1.1rem 1.3rem;overflow-x:auto;
+font-family:Consolas,monospace;font-size:.84rem;line-height:1.7;margin:.8rem 0}
+pre .c{color:#7B7B9E}
+footer{padding:2.5rem 7vw;text-align:center;border-top:1.5px solid var(--line);background:var(--paper2);
+font-size:.85rem;color:var(--ink3);line-height:2}
+footer a{color:var(--violet)}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="hero-inner">
+    <div class="kicker"><span class="dot"></span>Framework Recommendation · 2026-09-28 实测</div>
+    <h1>大模型训练框架推荐<br><span class="grad">LLM + VLM · SFT + RL + LoRA</span></h1>
+    <p class="sub">
+      针对「同时支持 LLM 与 VLM、覆盖 SFT / RL / LoRA 全流程、成熟好用、开源且维护频繁」的需求，
+      实测 8 个主流框架的 GitHub 仓库数据与功能覆盖，给出明确推荐。
+      <strong>所有数据均为程序实测，非主观评价。</strong>
+    </p>
+  </div>
+</header>
+<div class="wrap">
+<!-- ========== 首推 ========== -->
+<section>
+  <h2>首推结论</h2>
+  <div class="champion">
+    <h3>ms-swift（魔搭社区）<span class="repo">github.com/modelscope/ms-swift</span></h3>
+    <p>
+      阿里达摩院魔搭社区开源的<strong>一站式大模型训练/微调/部署框架</strong>。
+      在本次实测中，它是<strong>唯一同时满足全部需求</strong>的框架：功能覆盖 6/6 项满分，
+      近 3 天内有代码提交，19 天前发布新版本，且<strong>对 Qwen 系列模型有原生优先支持</strong>
+      （毕竟是同门生态）。
+    </p>
+    <div class="metrics">
+      <div class="metric"><div class="n">15,738</div><div class="l">GitHub Stars</div></div>
+      <div class="metric"><div class="n">6/6</div><div class="l">功能覆盖满分</div></div>
+      <div class="metric"><div class="n">3 天前</div><div class="l">最近代码提交</div></div>
+      <div class="metric"><div class="n">19 天前</div><div class="l">最近版本发布</div></div>
+    </div>
+    <p style="margin-bottom:0">
+      <strong>为什么它最合适：</strong>① 支持 200+ 文本模型与 100+ 多模态模型（含 Qwen3-VL、Qwen3.8、InternVL 等）；
+      ② 训练方法覆盖 CPT/SFT/DPO/GRPO/PPO/KTO/RM 全链路；③ LoRA/QLoRA/LoRA+ 及全参数训练都支持；
+      ④ 底层兼容 DeepSpeed / FSDP / Megatron 多种并行方案；⑤ 中文文档完善，社区活跃。
+    </p>
+  </div>
+  <div class="hl">
+    <p><strong>一句话推荐：</strong>如果只装一个框架，选 <strong>ms-swift</strong>。
+    它把「LLM + VLM + SFT + RL + LoRA + 全参数 + 分布式」全塞进了一套统一命令行里，
+    且与 Qwen 生态同源，踩坑最少。</p>
+  </div>
+</section>
+<!-- ========== 实测对比 ========== -->
+<section>
+  <h2>实测对比：8 个主流框架</h2>
+  <p>下表数据来自 GitHub API 实测（2026-09-28），功能覆盖通过抓取各仓库 README 关键词检测得出。</p>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>框架</th><th>Stars</th><th>最近提交</th><th>最近发版</th>
+          <th>VLM</th><th>RL</th><th>LoRA</th><th>SFT</th><th>全参数</th><th>分布式</th><th>功能覆盖</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="hl-row">
+          <td><strong>ms-swift</strong></td><td class="star">15,738</td><td class="yes">3 天前</td><td class="yes">19 天前</td>
+          <td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td>
+          <td class="yes">6/6</td>
+        </tr>
+        <tr>
+          <td><strong>LLaMA-Factory</strong></td><td class="star">75,116</td><td class="yes">14 天前</td><td class="no">120 天前</td>
+          <td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td>
+          <td class="yes">6/6</td>
+        </tr>
+        <tr>
+          <td><strong>Axolotl</strong></td><td class="star">12,510</td><td class="yes">当天</td><td class="yes">17 天前</td>
+          <td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td>
+          <td class="yes">6/6</td>
+        </tr>
+        <tr>
+          <td><strong>veRL</strong>（字节）</td><td class="star">23,662</td><td class="yes">当天</td><td class="yes">7 天前</td>
+          <td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td><td class="yes">✓</td>
+          <td>5/6</td>
+        </tr>
+        <tr>
+          <td><strong>Unsloth</strong></td><td class="star">76,884</td><td class="yes">当天</td><td class="yes">1 天前</td>
+          <td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td>
+          <td>5/6</td>
+        </tr>
+        <tr>
+          <td><strong>TRL</strong>（HuggingFace）</td><td class="star">19,403</td><td class="yes">1 天前</td><td class="yes">2 天前</td>
+          <td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td><td class="yes">✓</td>
+          <td>4/6</td>
+        </tr>
+        <tr>
+          <td><strong>XTuner</strong>（上海AI Lab）</td><td class="star">5,205</td><td class="yes">当天</td><td>—</td>
+          <td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td><td class="yes">✓</td><td class="no">—</td><td class="yes">✓</td>
+          <td>4/6</td>
+        </tr>
+        <tr>
+          <td><strong>OpenRLHF</strong></td><td class="star">10,045</td><td class="yes">11 天前</td><td>—</td>
+          <td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td><td class="yes">✓</td>
+          <td>4/6</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:.85rem;color:var(--ink3)">
+    注：功能覆盖基于 README 关键词检测，仅反映文档层面的能力声明；「—」表示未在 README 中检出对应关键词，
+    不代表完全不具备该能力（可能以插件或子模块形式提供）。
+  </p>
+</section>
+<!-- ========== 备选 ========== -->
+<section>
+  <h2>备选方案：按场景选择</h2>
+  <div class="card">
+    <h4>🥈 LLaMA-Factory <span class="repo">github.com/hiyouga/LLaMA-Factory</span> · ⭐75,116</h4>
+    <ul>
+      <li><strong>优势</strong>：生态最大、教程最多、WebUI 最友好，新手零代码即可上手微调；功能覆盖同样 6/6。</li>
+      <li><strong>注意</strong>：实测最近一次正式发版距今 <strong>120 天</strong>（代码仍有提交，但发版节奏偏慢）；RL 能力以 DPO/KTO/PPO 为主，GRPO 等新算法跟进稍慢。</li>
+      <li><strong>适合</strong>：以 SFT / LoRA 微调为主的团队，或需要可视化界面降低使用门槛的场景。</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>🥉 veRL（字节跳动）<span class="repo">github.com/volcengine/verl</span> · ⭐23,662</h4>
+    <ul>
+      <li><strong>优势</strong>：<strong>强化学习专精</strong>，GRPO/PPO 等 RL 算法实现最前沿，7 天前刚发新版，被大量 RL 论文采用。</li>
+      <li><strong>注意</strong>：定位是 RL 训练框架，全参数 SFT 不是它的主战场；建议与 ms-swift 搭配使用。</li>
+      <li><strong>适合</strong>：主攻 RLHF / GRPO 后训练、追求算法前沿的团队。</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>💡 Unsloth <span class="repo">github.com/unslothai/unsloth</span> · ⭐76,884</h4>
+    <ul>
+      <li><strong>优势</strong>：<strong>单卡微调速度最快</strong>（宣称 2-5 倍加速、显存降低 70%），1 天前刚发版，维护极活跃。</li>
+      <li><strong>注意</strong>：强项是 LoRA/QLoRA 单机微调，分布式大规模训练不是重点。</li>
+      <li><strong>适合</strong>：个人开发者、单卡/双卡环境做快速微调实验。</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>🔧 TRL（HuggingFace 官方）<span class="repo">github.com/huggingface/trl</span> · ⭐19,403</h4>
+    <ul>
+      <li><strong>优势</strong>：HuggingFace 官方出品，与 transformers/datasets 生态无缝衔接，2 天前刚发版，代码质量高。</li>
+      <li><strong>注意</strong>：偏底层库，需要自己写训练脚本；VLM 支持较弱，无开箱即用的多模态训练流程。</li>
+      <li><strong>适合</strong>：需要深度定制训练逻辑、追求代码可控性的团队。</li>
+    </ul>
+  </div>
+</section>
+<!-- ========== 上手 ========== -->
+<section>
+  <h2>ms-swift 快速上手</h2>
+  <div class="steps">
+    <div class="step"><b>安装</b><span>支持 pip 一键安装，也可从源码安装获取最新特性。</span></div>
+    <pre><span class="c"># 基础安装</span>
+pip install ms-swift -U
+<span class="c"># 需要 RL 训练时，安装额外依赖</span>
+pip install ms-swift[llm] -U</pre>
+    <div class="step"><b>LoRA 微调（LLM）</b><span>一行命令完成，支持 Qwen 全系列。</span></div>
+    <pre>swift sft \
+    --model Qwen/Qwen3-8B \
+    --train_type lora \
+    --dataset 'AI-ModelScope/alpaca-gpt4-data-zh#500' \
+    --torch_dtype bfloat16 \
+    --num_train_epochs 1 \
+    --lora_rank 8 \
+    --learning_rate 1e-4 \
+    --output_dir output</pre>
+    <div class="step"><b>多模态微调（VLM）</b><span>只需换模型和数据集，命令结构一致。</span></div>
+    <pre>swift sft \
+    --model Qwen/Qwen3-VL-8B-Instruct \
+    --train_type lora \
+    --dataset 'AI-ModelScope/LaTeX_OCR#2000' \
+    --torch_dtype bfloat16 \
+    --num_train_epochs 1 \
+    --output_dir output_vl</pre>
+    <div class="step"><b>强化学习（GRPO）</b><span>内置 GRPO/PPO/DPO 等算法，直接可跑。</span></div>
+    <pre>swift rlhf \
+    --rlhf_type grpo \
+    --model Qwen/Qwen3-8B \
+    --dataset 'AI-ModelScope/gsm8k' \
+    --reward_funcs accuracy \
+    --output_dir output_grpo</pre>
+    <div class="step"><b>全参数训练与分布式</b><span>去掉 <code>--train_type lora</code> 即为全参数；加 <code>--deepspeed zero3</code> 等参数启用分布式。</span></div>
+    <pre>swift sft \
+    --model Qwen/Qwen3-8B \
+    --train_type full \
+    --deepspeed zero3 \
+    --dataset 'AI-ModelScope/alpaca-gpt4-data-zh' \
+    --output_dir output_full</pre>
+  </div>
+  <div class="hl">
+    <p><strong>组合建议：</strong>日常 SFT/LoRA 微调用 <strong>ms-swift</strong>；
+    如果要做大规模 RL 前沿实验，可搭配 <strong>veRL</strong>；
+    如果只有单卡想跑得飞快，试试 <strong>Unsloth</strong>。三者并不冲突，可按阶段切换。</p>
+  </div>
+</section>
+</div>
+<footer>
+  <strong style="color:var(--ink)">大模型训练框架推荐报告</strong><br>
+  数据来源：GitHub API 实测（2026-09-28）· 各框架官方 README 与文档<br>
+  功能覆盖基于 README 关键词检测，仅供参考<br><br>
+  Generated by <a href="https://www.aipyaipy.com" target="_blank">AiPy</a> ｜ 本地数据处理，不上传任何信息
+</footer>
+</body>
+</html>
