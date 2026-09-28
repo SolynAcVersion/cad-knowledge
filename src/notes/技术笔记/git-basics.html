@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Git 常用命令速查</title>
+<style>
+body{font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+max-width:760px;margin:0 auto;padding:56px 24px 96px;line-height:1.85;color:#1a1d24;background:#fff}
+h1{font-size:32px;letter-spacing:-.02em;margin-bottom:8px}
+.date{color:#6b7280;font-size:13.5px;margin-bottom:32px;padding-bottom:20px;border-bottom:1px solid #e6e8ec}
+h2{font-size:20px;margin:32px 0 12px}
+code{background:#f2f4f8;padding:2px 7px;border-radius:5px;font-size:14px;color:#c0392b}
+pre{background:#1a1d24;color:#e6e8ec;padding:18px;border-radius:12px;overflow-x:auto;font-size:13.5px;line-height:1.7}
+blockquote{border-left:3px solid #2f6bff;background:#eaf0ff;padding:14px 20px;border-radius:0 10px 10px 0;margin:20px 0;color:#3a4256}
+a.back{display:inline-block;margin-top:48px;color:#2f6bff;text-decoration:none;font-size:14px}
+</style>
+</head>
+<body>
+<h1>Git 常用命令速查</h1>
+<div class="date">2026-09-20 · 技术笔记</div>
+
+<h2>日常三件套</h2>
+<pre>git add .
+git commit -m "说明"
+git push</pre>
+<h2>分支操作</h2>
+<pre>git checkout -b feature/xxx   # 新建并切换分支
+git merge main                # 合并 main 到当前分支</pre>
+<blockquote>提示：提交信息写清楚「做了什么」，半年后的你会感谢现在的你。</blockquote>
+<h2>回退</h2>
+<p>撤销工作区修改用 <code>git checkout -- 文件名</code>；回退提交用 <code>git reset --soft HEAD~1</code>。</p>
+
+<a class="back" href="../index.html">← 返回知识库</a>
+</body>
+</html>
