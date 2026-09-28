@@ -146,7 +146,7 @@ function catBtn(key, label, n){
   return b;
 }
 function card(d){
-  return '<a class="card" href="' + encodeURI(d.rel) + '" target="_blank">' +
+  return '<a class="card" href="notes/' + encodeURI(d.rel) + '" target="_blank">' +
     '<span class="tag">' + esc(d.category) + '</span>' +
     '<h3>' + esc(d.title) + '</h3>' +
     '<p>' + (esc(d.summary) || '暂无摘要') + '</p>' +
