@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<!--
+  ============================================================
+  从工程图到参数化 CAD · 五篇论文的"图生程序"演进
+  ------------------------------------------------------------
+  版式：blog-design-template-reference.html（浅色正文 + 深色页头，
+  编号章节，卡片 / 表格 / 流程 / 引用 / 代码块组件，KaTeX 公式）。
+  内容：2023–2026 五篇 arXiv 论文精读（zh-tech-blog-writer 风格）。
+  ============================================================
+-->
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="精读 2023–2026 年五篇 arXiv 论文：PlankAssembly、CAD2Program、Drawing2CAD、OmniMech、VGGT-CAD——从 2D 工程图到可执行参数化 CAD 模型的四年演进。">
+<title>从工程图到参数化 CAD：五篇论文的"图生程序"演进</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Noto+Serif+SC:wght@400;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.18.9/dist/katex.min.css">
+<style>
+/* ============================================================
+   1. 设计变量 —— 换主题只需要改这一段
+   ============================================================ */
+:root{
+  /* 文字与描边 */
+  --ink:#0C1220; --ink-2:#1B2438; --sub:#5C6880; --faint:#8B96AC;
+  --line:#E3E8F0; --line-2:#EEF2F8;
+  /* 背景 */
+  --bg:#FBFCFE; --card:#FFFFFF;
+  /* 语义色：主 / 对比 / 注意 / 风险 / 进阶 / 结论 */
+  --blue:#2563EB; --blue-soft:#EAF1FF;
+  --cyan:#06B6D4; --cyan-soft:#E4FAFE;
+  --amber:#F59E0B; --amber-soft:#FFF6E5;
+  --rose:#E11D48; --rose-soft:#FFECF1;
+  --violet:#7C3AED; --violet-soft:#F3EDFF;
+  --green:#10B981; --green-soft:#E6F9F2;
+  /* 字体：等宽 = 代码与元信息，display = 标题与数字 */
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --display:'Space Grotesk','Noto Serif SC',sans-serif;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;
+  /* 版心 */
+  --wrap:1180px;
+}
+
+/* ============================================================
+   2. 基础层
+   ============================================================ */
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg); color:var(--ink); font-family:var(--sans);
+  line-height:1.75; font-size:15.5px; -webkit-font-smoothing:antialiased;
+  background-image:
+    radial-gradient(circle at 12% 8%, rgba(37,99,235,.055), transparent 42%),
+    radial-gradient(circle at 88% 4%, rgba(124,58,237,.05), transparent 38%),
+    linear-gradient(var(--line-2) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line-2) 1px, transparent 1px);
+  background-size:auto,auto,64px 64px,64px 64px;
+  background-attachment:fixed;
+}
+.wrap{max-width:var(--wrap);margin:0 auto;padding:0 30px}
+::selection{background:var(--blue-soft);color:var(--blue)}
+
+/* 阅读进度条 */
+.progress{position:fixed;top:0;left:0;height:3px;width:0;z-index:60;
+  background:linear-gradient(90deg,var(--blue),var(--cyan) 55%,var(--violet));
+  transition:width .12s linear}
+
+/* ============================================================
+   3. 页头 hero —— 全页唯一深色区块
+   ============================================================ */
+.hero{position:relative;overflow:hidden;color:#fff;
+  background:linear-gradient(135deg,#0A1020 0%,#131E3A 46%,#1E2A52 100%);
+  padding:76px 0 62px;}
+.hero::before{content:"";position:absolute;inset:0;
+  background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
+  background-size:52px 52px;
+  -webkit-mask-image:radial-gradient(ellipse 80% 70% at 50% 40%,#000 30%,transparent 100%);
+  mask-image:radial-gradient(ellipse 80% 70% at 50% 40%,#000 30%,transparent 100%);}
+.hero::after{content:"";position:absolute;width:620px;height:620px;right:-190px;top:-260px;
+  background:radial-gradient(circle,rgba(6,182,212,.30),transparent 66%);filter:blur(24px);}
+.hero .wrap{position:relative;z-index:2}
+.eyebrow{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);
+  font-size:11.5px;letter-spacing:.20em;text-transform:uppercase;color:#7DD3FC;
+  border:1px solid rgba(125,211,252,.34);border-radius:100px;padding:7px 16px;
+  margin-bottom:26px;background:rgba(125,211,252,.07);}
+.eyebrow .dot{width:6px;height:6px;border-radius:50%;background:#22D3EE;box-shadow:0 0 10px #22D3EE;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.32}}
+.hero h1{font-family:var(--display);font-size:clamp(34px,5.2vw,60px);font-weight:700;
+  line-height:1.1;letter-spacing:-.022em;margin-bottom:20px;}
+.hero h1 em{font-style:normal;background:linear-gradient(96deg,#60A5FA,#22D3EE 52%,#A78BFA);
+  -webkit-background-clip:text;background-clip:text;color:transparent;}
+.hero p.lede{font-size:17px;color:#B6C2DA;max-width:780px;line-height:1.8}
+.hero p.lede strong{color:#fff}
+.byline{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-top:30px;
+  font-family:var(--mono);font-size:12.5px;color:#93A2BF;letter-spacing:.02em}
+.byline .sep{width:1px;height:15px;background:rgba(255,255,255,.18)}
+.avatar{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;flex-shrink:0;
+  font-family:var(--display);font-weight:700;font-size:13.5px;color:#0A1020;
+  background:linear-gradient(135deg,#7DD3FC,#A78BFA)}
+.hero-stats{display:flex;flex-wrap:wrap;gap:14px;margin-top:40px}
+.stat{border:1px solid rgba(255,255,255,.13);border-radius:14px;padding:16px 22px;
+  background:rgba(255,255,255,.045);backdrop-filter:blur(8px);min-width:150px;}
+.stat b{display:block;font-family:var(--display);font-size:29px;font-weight:700;color:#fff;line-height:1.15}
+.stat span{font-size:12px;color:#93A2BF;letter-spacing:.03em}
+
+/* ============================================================
+   4. 粘性目录 + 章节头
+   ============================================================ */
+nav.toc{position:sticky;top:0;z-index:50;background:rgba(251,252,254,.90);
+  backdrop-filter:blur(14px);border-bottom:1px solid var(--line);}
+nav.toc .wrap{display:flex;gap:6px;overflow-x:auto;padding:11px 30px;scrollbar-width:none}
+nav.toc .wrap::-webkit-scrollbar{display:none}
+nav.toc a{font-family:var(--mono);font-size:12px;color:var(--sub);text-decoration:none;
+  padding:7px 14px;border-radius:8px;white-space:nowrap;transition:.2s;}
+nav.toc a:hover{background:var(--blue-soft);color:var(--blue)}
+nav.toc a.active{background:var(--ink);color:#fff}
+
+section{padding:66px 0 12px;scroll-margin-top:64px}
+.sec-head{display:flex;align-items:flex-start;gap:18px;margin-bottom:34px}
+.sec-num{font-family:var(--display);font-size:44px;font-weight:700;line-height:1;
+  color:transparent;-webkit-text-stroke:1.6px var(--line);flex-shrink:0;padding-top:4px;}
+.sec-head h2{font-family:var(--display);font-size:clamp(23px,3.1vw,31px);font-weight:700;
+  letter-spacing:-.015em;line-height:1.24;color:var(--ink);}
+.sec-head .sub{font-size:13.5px;color:var(--sub);margin-top:7px;font-family:var(--mono);}
+
+/* ============================================================
+   5. 正文排版
+   ============================================================ */
+.prose{max-width:920px}
+.prose p{font-size:15.6px;color:#33405A;margin-bottom:18px}
+.prose p:last-child{margin-bottom:0}
+.prose strong{color:var(--ink);font-weight:600}
+.prose h3{font-family:var(--display);font-size:19px;font-weight:700;margin:36px 0 16px}
+.prose ul,.prose ol{margin:0 0 18px 22px;font-size:15.2px;color:#33405A}
+.prose li{margin-bottom:8px}
+.prose a{color:var(--blue);text-decoration:none;border-bottom:1px solid rgba(37,99,235,.3)}
+.prose a:hover{border-bottom-color:var(--blue)}
+code{font-family:var(--mono);font-size:12.4px;background:#F3F6FB;color:#1E3A8A;
+  padding:1.5px 6px;border-radius:5px;border:1px solid #E4EAF4;}
+
+/* ============================================================
+   6. 栅格与卡片
+   ============================================================ */
+.grid{display:grid;gap:20px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(330px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(268px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;
+  padding:26px 26px 24px;position:relative;transition:.28s cubic-bezier(.2,.7,.3,1);}
+.card:hover{transform:translateY(-3px);box-shadow:0 14px 38px -14px rgba(12,18,32,.16);border-color:#D3DCEB}
+.card h3{font-family:var(--display);font-size:17px;font-weight:700;margin-bottom:11px;
+  display:flex;align-items:center;gap:10px;}
+.card h3 .ico{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
+  font-size:15px;flex-shrink:0;font-family:var(--display);font-weight:700;}
+.card p{font-size:14.5px;color:#3D4A61;line-height:1.78}
+.card .mot{margin-top:15px;padding-top:14px;border-top:1px dashed var(--line);
+  font-size:13.5px;color:var(--sub);}
+.card .mot b{color:var(--ink);font-weight:600}
+
+/* 标签 */
+.tag{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;
+  padding:3px 9px;border-radius:6px;margin:0 5px 6px 0;font-weight:600;}
+.t-blue{background:var(--blue-soft);color:var(--blue)}
+.t-cyan{background:var(--cyan-soft);color:#0891B2}
+.t-amber{background:var(--amber-soft);color:#B45309}
+.t-rose{background:var(--rose-soft);color:var(--rose)}
+.t-violet{background:var(--violet-soft);color:var(--violet)}
+.t-green{background:var(--green-soft);color:#047857}
+
+/* 数字指标条 */
+.kpi{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(176px,1fr));margin:26px 0}
+.kpi div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+.kpi b{display:block;font-family:var(--display);font-size:26px;font-weight:700;line-height:1.15;color:var(--ink)}
+.kpi span{font-family:var(--mono);font-size:12.4px;color:var(--sub)}
+
+/* ============================================================
+   7. 表格
+   ============================================================ */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:16px;background:var(--card)}
+table{width:100%;border-collapse:collapse;font-size:13.6px;min-width:760px}
+thead th{background:linear-gradient(180deg,#F7F9FD,#EFF3FA);color:var(--ink-2);
+  font-family:var(--display);font-weight:700;font-size:12.5px;letter-spacing:.02em;
+  text-align:left;padding:14px 16px;border-bottom:1.5px solid var(--line);white-space:nowrap;}
+tbody td{padding:13px 16px;border-bottom:1px solid var(--line-2);color:#3D4A61;
+  vertical-align:top;line-height:1.66;}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#FAFCFF}
+tbody td:first-child{font-weight:600;color:var(--ink);font-family:var(--display);font-size:13.2px}
+/* 数值列右对齐（评测表规范：文本列左对齐、数值列右对齐） */
+tbody td.r{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--sans);font-weight:400}
+
+/* ============================================================
+   8. 图片 / 引用块 / 提示块
+   ============================================================ */
+figure{margin:30px 0}
+figure img,figure svg{width:100%;display:block;border:1px solid var(--line);
+  border-radius:16px;background:#fff}
+figcaption{font-size:12.8px;color:var(--sub);margin-top:12px;text-align:center;
+  font-family:var(--mono);}
+
+.callout{border-left:3px solid var(--blue);
+  background:linear-gradient(90deg,var(--blue-soft),transparent 78%);
+  border-radius:0 14px 14px 0;padding:20px 24px;margin:26px 0;
+  font-size:14.6px;color:#2A3A55;}
+.callout b{color:var(--ink)}
+.callout.warn{border-left-color:var(--amber);background:linear-gradient(90deg,var(--amber-soft),transparent 78%)}
+.callout.rose{border-left-color:var(--rose);background:linear-gradient(90deg,var(--rose-soft),transparent 78%)}
+.callout.good{border-left-color:var(--green);background:linear-gradient(90deg,var(--green-soft),transparent 78%)}
+
+.quote{position:relative;margin:32px 0;padding:26px 32px 24px 36px;
+  border:1px solid var(--line);border-radius:16px;background:var(--card);overflow:hidden}
+.quote::before{content:"“";position:absolute;left:12px;top:2px;font-family:var(--display);
+  font-size:58px;line-height:1;color:#C9DAFF;}
+.quote p{font-family:var(--display);font-size:17.5px;font-weight:500;line-height:1.78;color:var(--ink-2);position:relative}
+.quote cite{display:block;margin-top:12px;font-family:var(--mono);font-size:12.4px;
+  color:var(--sub);font-style:normal}
+
+/* ============================================================
+   9. 流程条
+   ============================================================ */
+.flow{display:flex;flex-wrap:wrap;gap:0;align-items:stretch;margin:28px 0}
+.flow-step{flex:1;min-width:172px;background:var(--card);border:1px solid var(--line);
+  padding:20px 18px;position:relative;}
+.flow-step:first-child{border-radius:14px 0 0 14px}
+.flow-step:last-child{border-radius:0 14px 14px 0}
+.flow-step:not(:last-child){border-right:none}
+.flow-step .k{font-family:var(--mono);font-size:10.5px;color:var(--faint);
+  letter-spacing:.14em;text-transform:uppercase}
+.flow-step .v{font-family:var(--display);font-weight:700;font-size:14.5px;
+  color:var(--ink);margin:7px 0 6px}
+.flow-step .d{font-size:12.4px;color:var(--sub);line-height:1.6}
+.flow-step::after{content:"";position:absolute;right:-9px;top:50%;
+  transform:translateY(-50%) rotate(45deg);width:16px;height:16px;background:var(--card);
+  border-top:1px solid var(--line);border-right:1px solid var(--line);z-index:3;}
+.flow-step:last-child::after{display:none}
+
+/* ============================================================
+  10. 编号要点列表 / 清单
+   ============================================================ */
+.mot-list{display:grid;gap:12px}
+.mot-item{display:flex;gap:16px;align-items:flex-start;background:var(--card);
+  border:1px solid var(--line);border-radius:13px;padding:17px 20px;transition:.24s;}
+.mot-item:hover{border-color:#CFDAEB;background:#FDFEFF;transform:translateX(4px)}
+.mot-item .n{font-family:var(--display);font-weight:700;font-size:14px;color:#fff;
+  width:28px;height:28px;border-radius:9px;display:grid;place-items:center;
+  flex-shrink:0;margin-top:1px;}
+.mot-item .txt{font-size:14.3px;color:#3D4A61;line-height:1.72}
+.mot-item .txt b{color:var(--ink);font-weight:600}
+
+.checklist{display:grid;gap:10px;margin:20px 0;padding:0}
+.checklist li{list-style:none;display:flex;gap:12px;align-items:flex-start;
+  font-size:14.4px;color:#3D4A61;line-height:1.72}
+.checklist li::before{content:"✓";display:grid;place-items:center;width:19px;height:19px;
+  margin-top:5px;border-radius:6px;background:var(--green-soft);color:#047857;
+  font-size:11px;font-weight:700;flex-shrink:0}
+
+/* ============================================================
+   11. 代码块
+   ============================================================ */
+.codewrap{position:relative;margin:24px 0}
+pre{background:linear-gradient(160deg,#0A1020,#131E3A);border:1px solid #1E2A52;
+  border-radius:14px;padding:22px 24px;overflow-x:auto}
+pre code{background:none;border:none;padding:0;display:block;color:#C7D3E8;
+  font-family:var(--mono);font-size:12.8px;line-height:1.9}
+pre .c{color:#5F7396}
+pre .k{color:#7DD3FC}
+pre .s{color:#A78BFA}
+pre .f{color:#FCD34D}
+.copy{position:absolute;top:12px;right:12px;font-family:var(--mono);font-size:11px;
+  letter-spacing:.06em;color:#93A2BF;background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:5px 11px;cursor:pointer;
+  transition:.2s}
+.copy:hover{color:#fff;background:rgba(125,211,252,.16);border-color:rgba(125,211,252,.4)}
+.copy.done{color:#22D3EE;border-color:rgba(34,211,238,.45)}
+
+/* ============================================================
+   12. LaTeX 公式（KaTeX）
+   ============================================================ */
+.katex{font-size:1.02em}
+.prose .katex,.card .katex,.mot-item .katex,.callout .katex{color:var(--ink-2)}
+.math-display{position:relative;margin:26px 0;padding:24px 26px;border:1px solid var(--line);
+  border-radius:16px;background:linear-gradient(180deg,#FCFDFF,#F6F9FF);
+  overflow-x:auto;break-inside:avoid}
+.math-display .katex-display{margin:0}
+.math-display .katex{font-size:1.14em}
+.math-display .katex-display>.katex{white-space:normal}
+.prose>.katex-display,.prose p>.katex-display,.callout>.katex-display{
+  margin:22px 0;padding:22px 24px;border:1px solid var(--line);border-radius:16px;
+  background:linear-gradient(180deg,#FCFDFF,#F6F9FF);overflow-x:auto}
+html:not(.math-ok) .math-display{font-family:var(--mono);font-size:12.6px;line-height:1.95;
+  color:#1E3A8A;white-space:pre-wrap;background:#F7F9FD}
+html:not(.math-ok) .math-display *{font-family:inherit;white-space:pre-wrap;color:inherit}
+.katex-error{color:var(--rose)!important}
+.math-warn{display:none}
+html.math-offline .math-warn{display:block}
+
+/* ============================================================
+   13. 文末：作者卡 / 行动区 / 页脚
+   ============================================================ */
+.author-box{display:flex;gap:18px;align-items:flex-start;background:var(--card);
+  border:1px solid var(--line);border-radius:16px;padding:24px 26px;margin:34px 0}
+.author-box .avatar{width:52px;height:52px;font-size:16px}
+.author-box b{font-family:var(--display);font-size:15.5px;color:var(--ink)}
+.author-box p{font-size:13.9px;color:var(--sub);line-height:1.72;margin-top:6px}
+.cta{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;
+  border:1px solid #D9E4FB;border-radius:16px;padding:24px 28px;margin:26px 0;
+  background:linear-gradient(110deg,var(--blue-soft),var(--violet-soft))}
+.cta p{font-size:14.6px;color:#2A3A55;margin:0;max-width:640px}
+.cta p b{color:var(--ink)}
+.btn{display:inline-block;font-family:var(--display);font-weight:700;font-size:14px;
+  color:#fff;background:var(--ink);padding:11px 22px;border-radius:10px;
+  text-decoration:none;transition:.24s;white-space:nowrap}
+.btn:hover{background:var(--blue);transform:translateY(-1px)}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid #C9D6EE}
+.btn.ghost:hover{background:#fff;color:var(--blue)}
+
+footer{margin-top:70px;padding:34px 0;border-top:1px solid var(--line);
+  background:linear-gradient(180deg,transparent,#F5F8FD);}
+footer .wrap{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center}
+footer p{font-size:12.6px;color:var(--faint);font-family:var(--mono)}
+footer a{color:var(--blue);text-decoration:none;font-weight:600}
+footer a:hover{text-decoration:underline}
+
+/* ============================================================
+   14. 入场动画与响应式
+   ============================================================ */
+.reveal{opacity:0;transform:translateY(22px);
+  transition:opacity .7s cubic-bezier(.2,.7,.3,1),transform .7s cubic-bezier(.2,.7,.3,1)}
+.reveal.on{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .reveal{opacity:1;transform:none;transition:none}
+  .card:hover,.mot-item:hover,.btn:hover{transform:none}
+}
+@media(max-width:720px){
+  .wrap{padding:0 18px}
+  .hero{padding:52px 0 44px}
+  .sec-num{font-size:32px}
+  .flow-step{border-radius:12px!important;border-right:1px solid var(--line)!important}
+  .flow-step::after{display:none}
+  .flow{gap:10px}
+  section{padding:52px 0 8px}
+}
+@media print{
+  nav.toc,.copy,.progress{display:none}
+  .reveal{opacity:1;transform:none}
+  body{background:#fff;background-image:none}
+  .hero{background:#0A1020!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  section{page-break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<noscript><style>.reveal{opacity:1!important;transform:none!important}</style></noscript>
+<div class="progress" id="progress"></div>
+
+<!-- ========== 页头 ========== -->
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow"><span class="dot"></span>Paper Survey · 2023–2026</div>
+    <h1>从工程图到参数化 CAD<br><em>五篇论文的"图生程序"演进</em></h1>
+    <p class="lede">
+      当 3D 生成研究还在吃点云、网格与文本时，工业界的起点始终是 <strong>2D 工程图</strong>。
+      本文精读五篇 arXiv 论文——PlankAssembly、CAD2Program、Drawing2CAD、OmniMech、VGGT-CAD，
+      看它们如何把"看图建模"变成"图生程序"：<strong>三视图线稿 → 栅格图纸 → 矢量四视图 → 随手拍视频 → 真实 SolidWorks 图纸</strong>。
+    </p>
+    <div class="byline">
+      <span class="avatar">HLR</span>
+      <span>HL R</span>
+      <span class="sep"></span>
+      <span>2026-09-29</span>
+      <span class="sep"></span>
+      <span>约 25 分钟</span>
+      <span class="sep"></span>
+      <span>#CAD生成 · #论文精读 · #基准评测</span>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><b>5</b><span>论文精读</span></div>
+      <div class="stat"><b>4</b><span>年演进（2023–2026）</span></div>
+      <div class="stat"><b>≈100万</b><span>配对样本总量</span></div>
+      <div class="stat"><b>4</b><span>种输入模态</span></div>
+      <div class="stat"><b>9</b><span>个关键公式</span></div>
+    </div>
+  </div>
+</header>
+
+<!-- ========== 粘性目录 ========== -->
+<nav class="toc">
+  <div class="wrap">
+    <a href="#s1">01 读前总结</a>
+    <a href="#s2">02 问题定义</a>
+    <a href="#s3">03 PlankAssembly</a>
+    <a href="#s4">04 CAD2Program</a>
+    <a href="#s5">05 Drawing2CAD</a>
+    <a href="#s6">06 VGGT-CAD</a>
+    <a href="#s7">07 OmniMech</a>
+    <a href="#s8">08 对比与结论</a>
+  </div>
+</nav>
+
+<!-- ========== 01 读前 AI 梳理总结 ========== -->
+<section id="s1">
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <div class="sec-num">01</div>
+      <div>
+        <h2>读前 AI 梳理总结</h2>
+        <div class="sub">TL;DR · Motivation / Method / Experiment / Conclusion</div>
+      </div>
+    </div>
+    <div class="prose">
+      <p>
+        <strong>动机：</strong>制造与建筑行业的真实设计流程以 2D 工程图为起点，而主流 3D 生成研究长期以点云、网格或文本为输入，
+        与工业流程明显脱节。2023 至 2026 年间，五篇论文沿着"2D 工程图/多视角图像 → 可执行参数化 CAD（Computer-Aided Design，计算机辅助设计）模型"
+        这条线持续推进，本文把它们放在一起精读。
+      </p>
+    </div>
+    <div class="mot-list">
+      <div class="mot-item">
+        <div class="n" style="background:var(--blue)">1</div>
+        <div class="txt"><b><a href="https://arxiv.org/abs/2308.05744" target="_blank" rel="noopener">PlankAssembly</a>（ICCV 2023）：</b>三视图矢量线稿 → 板件形状程序，Transformer 序列建模 + 指针网络显式表达板件附着关系。</div>
+      </div>
+      <div class="mot-item">
+        <div class="n" style="background:var(--cyan)">2</div>
+        <div class="txt"><b><a href="https://arxiv.org/abs/2412.11892" target="_blank" rel="noopener">CAD2Program</a>（AAAI 2025）：</b>栅格图纸整图 → 通用文本程序，微调 2B 视觉语言模型（VLM，Vision-Language Model）自回归生成。</div>
+      </div>
+      <div class="mot-item">
+        <div class="n" style="background:var(--violet)">3</div>
+        <div class="txt"><b><a href="https://arxiv.org/abs/2508.18733" target="_blank" rel="noopener">Drawing2CAD</a>（ACM MM 2025）：</b>SVG 矢量图 → CAD 操作序列，双解码器解耦"命令类型"与"参数"，配合软目标分布损失。</div>
+      </div>
+      <div class="mot-item">
+        <div class="n" style="background:var(--amber)">4</div>
+        <div class="txt"><b><a href="https://arxiv.org/abs/2609.21225" target="_blank" rel="noopener">VGGT-CAD</a>（preprint 2026）：</b>多视角图像 + 相机参数条件 token → 非自回归 CAD 序列，迁移 VGGT 的预训练 3D 几何先验。</div>
+      </div>
+      <div class="mot-item">
+        <div class="n" style="background:var(--green)">5</div>
+        <div class="txt"><b><a href="https://arxiv.org/abs/2608.05539" target="_blank" rel="noopener">OmniMech</a>（preprint 2026）：</b>25.1 万对真实 SolidWorks 图纸-模型，四任务基准，系统摸底前沿 VLM 与专用模型。</div>
+      </div>
+    </div>
+    <div class="prose" style="margin-top:22px">
+      <p>
+        五篇论文分布在 2023–2026 四年里，输入端一路"降门槛"。先看时间线，建立整体地图：
+      </p>
+    </div>
+    <figure>
+      <img src="assets/d2c_timeline.png" alt="五篇论文时间线与输入模态演进">
+      <figcaption>图 1 · 五篇论文时间线：PlankAssembly → CAD2Program → Drawing2CAD → OmniMech → VGGT-CAD，输入从合成三视图一路走到真实工业图纸与随手拍</figcaption>
+    </figure>
+    <div class="prose">
+      <p>
+        <strong>实验：</strong>三个可验证的数字亮点——PlankAssembly 在 30% 噪声（随机缺线 + 端点扰动）下板件 F1 仍达 90.14%，
+        传统几何管线同条件只有 8.20%；Drawing2CAD 的双解码器 + 软损失把无效序列率（IR，Invalidity Ratio）从 23.40% 压到 20.31%，
+        4 视图参数准确率提升到 76.09%；OmniMech 上最强商业模型的表面 IoU（SIoU）只有 0.64、体积误差普遍在 17% 以上，
+        专用程序合成基线的通过率仅 28.9%。
+      </p>
+    </div>
+    <div class="kpi">
+      <div><b>90.14%</b><span>板件 F1 @ 30% 噪声</span></div>
+      <div><b>76.09%</b><span>4 视图参数准确率</span></div>
+      <div><b>0.64</b><span>最强模型 SIoU</span></div>
+      <div><b>≈100万</b><span>五篇论文配对样本</span></div>
+    </div>
+    <div class="callout good">
+      <b>结论：</b>四年的主线是"任务专用表示 → 通用程序语言 → 基础模型先验"，输入从理想化三视图走向真实图纸与随手拍视频，
+      数据规模从 2.6 万板件模型涨到百万级配对样本。当前瓶颈不在网络架构，而在<strong>尺寸精度与标注约束的可执行性</strong>——这正是 OmniMech 用数据揭示的差距。
+    </div>
+  </div>
+</section>
+
+<!-- ========== 02 问题定义 ========== -->
+<section id="s2">
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <div class="sec-num">02</div>
+      <div>
+        <h2>问题定义：把"看图建模"变成"图生程序"</h2>
+        <div class="sub">Task Formulation · Why programs instead of meshes</div>
+      </div>
+    </div>
+    <div class="prose">
+      <h3>任务形式化</h3>
+      <p>
+        给定一份 2D 输入$D$——矢量线稿、栅格图纸或多视角图像集$\{I_i, P_i\}$（$P_i$为相机参数）——
+        目标是生成参数化程序$G$，在 CAD 内核中执行得到实体$S(G)$。与普通 3D 重建不同，$G$必须满足两个额外约束：
+        <strong>可执行</strong>（能在 CAD 内核里跑出实体）与<strong>可编辑</strong>（改一个尺寸，全局联动更新）。
+      </p>
+      <h3>为什么输出是程序而不是网格</h3>
+      <p>
+        网格生成（如 PolyGen）输出三角面片：改不了尺寸、不携带设计意图、也无法直接进 CAD 工具链。
+        CAD 模型的本质是"草图 + 拉伸 + 布尔运算"的操作历史，参数化程序保留的正是这个历史。
+        五篇论文的输出表示各不相同——板件程序、文本程序、CAD 操作序列——但一言以蔽之：<strong>把几何写成程序</strong>。
+      </p>
+      <p>解码范式上，前三篇论文都是自回归生成：</p>
+    </div>
+    <div class="math-display">$$
+p(G \mid D) = \prod_{t=1}^{T} p(g_t \mid g_{&lt;t}, D) \tag{1}
+$$</div>
+    <div class="prose">
+      <p>
+        其中$g_t$是第$t$步输出的 token（一个坐标、一个命令或一段文本），$D$是编码后的输入。
+        自回归逐 token 生成的好处是序列长度自由、结构清晰；代价是误差累积与速度。
+        VGGT-CAD 改用可学习查询的非自回归解码，所有命令并行预测，换取速度与全局一致性——这是五篇论文里唯一的范式例外。
+      </p>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>输入类型</th><th>代表论文</th><th>保真度与信息量</th><th>工程现实性</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>三视图矢量线稿</td><td>PlankAssembly</td><td>坐标精确，需隐藏线消除（HLR，Hidden Line Removal）合成</td><td>中：需图纸软件配合</td></tr>
+          <tr><td>栅格整图（含标注层）</td><td>CAD2Program</td><td>丢失几何精度，保留全部标注信息</td><td>高：任何来源截图皆可</td></tr>
+          <tr><td>SVG 矢量四视图</td><td>Drawing2CAD</td><td>网络友好量化，有公开数据链路（DeepCAD）</td><td>中：依赖矢量导出</td></tr>
+          <tr><td>多视角图像 + 相机</td><td>VGGT-CAD</td><td>最接近"随手拍"，依赖相机先验</td><td>高：手机视频即可</td></tr>
+          <tr><td>真实 SolidWorks 图纸</td><td>OmniMech</td><td>尺寸/公差/符号最全，评测最难</td><td>最高：原生工业资产</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout">
+      <b>趋势很清楚：输入在"降门槛"。</b>从需要专业软件导出的理想线稿，一步步走到真实图纸和随手拍——这决定了谁能用、在哪用。
+    </div>
+  </div>
+</section>
+
+<!-- ========== 03 PlankAssembly ========== -->
+<section id="s3">
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <div class="sec-num">03</div>
+      <div>
+        <h2>PlankAssembly：三视图线稿 → 板件形状程序</h2>
+        <div class="sub">ICCV 2023 · arXiv 2308.05744 · Learnt Shape Programs</div>
+      </div>
+    </div>
+    <div class="prose">
+      <p>
+        <span class="tag t-blue">ICCV 2023</span><span class="tag t-cyan">arXiv 2308.05744</span><span class="tag t-violet">酷家乐柜体数据</span><span class="tag t-amber">噪声鲁棒</span>
+      </p>
+      <p>
+        <strong>动机：</strong>人工图纸充满噪声——缺线、端点抖动。传统"反投影 + 几何求解"管线依赖显式的输入-输出对应关系，
+        一碰噪声就崩；作者想用注意力隐式学习这种对应。
+        <strong>方法：</strong>Transformer 编码器-解码器 + 任务定制的"形状程序"（shape program），
+        输出序列里每个参数既可以取量化坐标值，也可以通过指针指向另一块板的面，从而显式表达板件附着。
+      </p>
+    </div>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="k">Step 01</div><div class="v">三视图线稿</div>
+        <div class="d">前/顶/侧视图，可见实线 + 隐藏虚线</div>
+      </div>
+      <div class="flow-step">
+        <div class="k">Step 02</div><div class="v">序列化量化</div>
+        <div class="d">边按字典序排序，坐标量化 9-bit</div>
+      </div>
+      <div class="flow-step">
+        <div class="k">Step 03</div><div class="v">Transformer</div>
+        <div class="d">6 层编码器 + 6 层解码器，8 头注意力</div>
+      </div>
+      <div class="flow-step">
+        <div class="k">Step 04</div><div class="v">形状程序</div>
+        <div class="d">Cuboid 六参数，数值或指针二选一</div>
+      </div>
+      <div class="flow-step">
+        <div class="k">Step 05</div><div class="v">板件装配</div>
+        <div class="d">附着成 DAG，非法指针被屏蔽</div>
+      </div>
+    </div>
+    <div class="prose">
+      <p>论文里"形状程序逐步搭出柜体"的过程一目了然：</p>
+    </div>
+    <figure>
+      <img src="assets/paper/paper_plankassembly_steps.png" alt="PlankAssembly 形状程序逐步构建柜体（论文原图）">
+      <figcaption>图 2 · 论文原图：执行形状程序命令逐步构建一个简单柜体——从 bbox 出发，每条命令附着一块板（原文说明："An illustration of how a simple cabinet is incrementally constructed by executing the shape program commands"）</figcaption>
+    </figure>
+    <div class="prose">
+      <h3>输入序列化</h3>
+      <p>
+        每条 2D 边表示为$(x_1, y_1, x_2, y_2)$，端点按坐标排序、边按字典序排序后压成一维序列，坐标量化为 9-bit 整数。
+        每个 token 的嵌入由五项相加：
+      </p>
+    </div>
+    <div class="math-display">$$
+E(v_i) = E_{\text{value}}(v_i) + E_{\text{view}}(v_i) + E_{\text{edge}}(v_i) + E_{\text{coord}}(v_i) + E_{\text{type}}(v_i) \tag{2}
+$$</div>
+    <div class="prose">
+      <p>
+        其中$E_{\text{value}}$编码量化数值本身，$E_{\text{view}}$区分前/顶/侧视图，$E_{\text{edge}}$与$E_{\text{coord}}$标记该值属于哪条边、哪个坐标位，
+        $E_{\text{type}}$区分可见边与隐藏边（虚线）。也就是说，输入没有用任何 2D 卷积，完全靠"排序 + 类型嵌入"把平面图变成语言。
+      </p>
+      <h3>带附着的形状程序</h3>
+      <p>
+        DSL（Domain-Specific Language，领域专用语言）只有一个原语：轴对齐长方体$\text{Cuboid}(x_{\min}, y_{\min}, z_{\min}, x_{\max}, y_{\max}, z_{\max})$，六个自由度。
+        关键设计在于：每个坐标<strong>要么是数值，要么是指针</strong>（指向另一块板的面），类似 C++ 的 union 类型。
+        整份程序构成一张有向无环图（DAG）：顶点是板件面，边是附着关系，拓扑排序后变成序列送入解码器。
+        解码时每个 token 有两个分布，用门控混合：
+      </p>
+    </div>
+    <div class="math-display">$$
+p(g_t \mid g_{&lt;t}, V) = \mathrm{concat}\big[(1 - w_t)\,p_{\text{vocab}}(g_t),\; w_t\,p_{\text{attach}}(g_t)\big], \qquad w_t = \sigma(\mathrm{Linear}(h_t)) \tag{3}
+$$</div>
+    <div class="prose">
+      <p>
+        其中$p_{\text{vocab}}$是量化坐标词表上的分类分布，$p_{\text{attach}}$是对已生成 token 做点积注意力得到的指针分布（Pointer-Network 风格），$w_t$是标量门控。
+        <strong>也就是说：模型每写一个参数，都在"照抄词表"和"指向另一块板的边"之间二选一——板件之间的附着关系因此成为一阶公民，而不是事后用几何规则去猜。</strong>
+        推理时还会按几何合法性屏蔽无效指针位置（例如一块板的$x_{\min}$只能指向别的板的$x_{\max}$）。
+      </p>
+      <h3>数据与结果</h3>
+      <p>
+        数据来自酷家乐（Kujiale）平台上设计师制作的柜体模型，共 26,000+ 个板件模型，过滤后按 24,039/1,329/1,339 划分训练/验证/测试；
+        三视图用 pythonOCC 的 HLR 接口合成。噪声模拟两种：随机选边删除（缺线），或沿边方向扰动端点（端点不准），噪声比例 0–30%。
+        评测指标为板件级精确率/召回率/F1：预测板与真值板做匈牙利匹配，3D IoU &gt; 0.5 记为命中。
+      </p>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>输入条件</th><th>传统几何管线</th><th>PlankAssembly</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>干净三视图（传统管线含重投影验证）</td><td class="r">94.07*</td><td class="r">91.75</td></tr>
+          <tr><td>30% 噪声（缺线 + 端点扰动）</td><td class="r">8.20</td><td class="r"><strong>90.14</strong></td></tr>
+          <tr><td>仅可见边（无隐藏线）</td><td class="r">39.31</td><td class="r">82.62</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <figure>
+      <img src="assets/d2c_plank_noise.png" alt="PlankAssembly 噪声鲁棒性对比">
+      <figcaption>图 3 · 噪声鲁棒性：30% 噪声下传统几何管线 F1 跌至 8.20（且仅 54 例出结果），PlankAssembly 保持 90.14，几乎不掉点</figcaption>
+    </figure>
+    <div class="kpi">
+      <div><b>0.63 s</b><span>推理 / 样本（RTX 3090）</span></div>
+      <div><b>3.61 s</b><span>PolyGen 同任务耗时</span></div>
+      <div><b>≈6×</b><span>速度提升</span></div>
+      <div><b>+81.9</b><span>30% 噪声下 F1 差距</span></div>
+    </div>
+    <div class="callout">
+      <b>* 表格的关键信息是"能不能出结果"：</b>传统管线在干净输入上靠重投影验证可以更高（94.07），但 1,339 个测试例中有 518 例在 5 分钟预算内超时未出结果；
+      30% 噪声下更是只剩 54 例能出结果。学习到的对应关系不挑输入，几何求解的对应关系挑。
+    </div>
+    <div class="prose">
+      <h3>实现与消融细节</h3>
+      <p>
+        补齐实现参数：token 嵌入 512 维，编码器/解码器各 6 层、8 头注意力、FFN 1,024 维，坐标 9-bit 量化；
+        训练用 Adam（学习率 $10^{-4}$）跑满 40 万步，每卡 batch 16、共 4 张 RTX 3090；推理时除屏蔽非法附着外，
+        还会过滤体积为零的退化长方体。
+      </p>
+      <p>
+        两组表示消融支撑了设计选择。输入侧：把三视图栅格化后走 ResNet50-FPN + 3D CNN 特征体的图像方案，各噪声档 F1 全线更低——
+        线稿栅格化后特征过稀；用启发式规则抽取侧脸多边形再回归包围盒的方案，干净输入相当、噪声敏感性明显更高，
+        再次印证"显式对应是脆弱的根源"。输出侧：与 PolyGen（逐顶点生成网格再拼实体）相比，六参数长方体的程序序列短得多——
+        这正是 0.63 秒 vs 3.61 秒的来源；且 PolyGen 预测的非矩形面经常无法闭合成实体，整块板直接丢失。
+        失败模式则集中在两处：附着指针指错面、自回归过早吐出终止符。
+      </p>
+    </div>
+    <div class="callout rose">
+      <b>局限：</b>只支持轴对齐板件，DSL 表达力受限；失败模式集中在附着预测错误和提前输出终止符（自回归早停）。
+    </div>
+  </div>
+</section>
+
+<!-- ========== 04 CAD2Program ========== -->
+<section id="s4">
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <div class="sec-num">04</div>
+      <div>
+        <h2>CAD2Program：栅格图纸 → 文本程序</h2>
+        <div class="sub">AAAI 2025 · arXiv 2412.11892 · A Vision-Language Approach</div>
+      </div>
+    </div>
+    <div class="prose">
+      <p>
+        <span class="tag t-blue">AAAI 2025</span><span class="tag t-cyan">arXiv 2412.11892</span><span class="tag t-violet">36.8 万柜体</span><span class="tag t-green">VLM 底座</span>
+      </p>
+      <p>
+        <strong>动机：</strong>矢量输入限制太多——要恰好三张轴对齐视图、要矢量格式。作者反其道而行：不设计任何任务专用表示，
+        把图纸当普通图片，用视觉语言模型直接"看图写程序"。
+        <strong>方法：</strong>微调 Mini-InternVL-1.5-2B（InternViT-300M 视觉编码器 + MLP 投影层 + InternLM2-1.8B 语言模型），
+        输入整张图纸栅格图，自回归生成 Python 风格文本程序。提示词只有一句："Reconstruct cabinet from image:"。整条链路一图看懂：
+      </p>
+      <figure>
+        <img src="assets/paper/paper_cad2program_overview.png" alt="CAD2Program 模型总览（论文原图）">
+        <figcaption>图 4 · 论文原图 · CAD2Program 模型总览：2D 图纸经 InternViT-300M 与 MLP 进入 InternLM2-1.8B，自回归输出柜体形状程序（原文说明："An overview of the CAD2Program model"）</figcaption>
+      </figure>
+      <h3>一行一个实例的通用语言</h3>
+      <p>
+        每个原语实例是三元组$Z_i = \{M_i, B_i, P_i\}$：模型 ID $M_i$（特殊 token，由模型名称与快照渲染图的 Chinese-CLIP 嵌入拼接构造）、
+        3D 包围盒$B_i$（中心$p_i \in \mathbb{R}^3$、尺寸$s_i \in \mathbb{R}^3$、绕竖轴旋转角$r_i \in \mathbb{R}$）、模型专属参数$P_i$。生成的程序长这样：
+      </p>
+    </div>
+    <div class="codewrap">
+      <button class="copy" type="button">复制</button>
+      <pre><code><span class="c"># 第一行：一个板件的空间位姿（中心×3、尺寸×3、转角×1）</span>
+<span class="f">bbox_0</span> = <span class="k">Bbox</span>(507, 185, 805, 1014, 370, 50, 0)
+<span class="c"># 第二行：该型号柜门的专属参数（开门方向、四面封边宽度等）</span>
+<span class="f">model_4</span> = <span class="s">&lt;model_82289390&gt;</span>(openDirection=0, uCove=18, dCover=18, lCover=18, rCover=18)</code></pre>
+    </div>
+    <div class="prose">
+      <p>
+        <strong>ID 用特殊 token 而不是字符串编号，是"视觉语言化"的关键一笔：检索哪一款模型，本质上变成了一个生成式分类问题。</strong>
+      </p>
+      <h3>数据与主结果</h3>
+      <p>
+        数据来自群核科技（Manycore）线上平台：36.8 万个定制柜体模型及其真实生产图纸，373 种原语、702 个模型专属参数，
+        柜体尺寸 0.1–4.5 米、原语数不超过 48，按 36.4 万/2 千/2 千划分。标注直接取自设计师建好的参数化模型，无需额外人工。
+        整体成绩：模型检索准确率 93.80%、重建 F1 82.76%、模型专属参数准确率 97.21%。
+      </p>
+      <p>最有信息量的一组消融是<strong>标注层</strong>（图纸上的尺寸、文字标注）：</p>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>输入层</th><th>模型检索</th><th>重建 F1</th><th>参数准确率</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>仅几何层</td><td class="r">85.42</td><td class="r">62.65</td><td class="r">81.94</td></tr>
+          <tr><td>几何 + 标注层</td><td class="r"><strong>93.80</strong></td><td class="r"><strong>82.76</strong></td><td class="r"><strong>97.21</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout good">
+      <b>尺寸标注不是图纸上的装饰，而是监督信号的一半。</b>加进标注层后 F1 涨了 20 分，参数准确率涨了 15 分——
+      因为三视图反推 3D 尺寸本就欠定，标注恰好补上了缺失的自由度。
+    </div>
+    <div class="prose">
+      <p>
+        两个值得展开的实现细节。其一，模型 ID 的特殊 token 不是随意散列：把原语名称文本与一张快照渲染图分别送入
+        Chinese-CLIP 的文本塔（RoBERTa-wwm-large）与视觉塔（ViT-H/14），两组嵌入拼接后映射进词表——
+        生成 ID 时既"看"得到渲染证据，也"读"得到名称语义。其二，同数据的 QWen2-VL-2B 对照微调拿到
+        检索 93.98 / F1 84.90 / 参数 96.93，与 Mini-InternVL-1.5-2B 基本同档。也就是说：2B 规模已经够用，
+        瓶颈在标注质量，不在参数量。
+      </p>
+    </div>
+    <ul class="checklist">
+      <li>输出用自由文本还是命令序列：差距在 0.1 分以内，表达力不打折。</li>
+      <li>代理语言 Python vs YAML：几乎无差（Python 平均 697 token，YAML 1,208 token，Python 更省上下文）。</li>
+      <li>把矢量编码器换成 21M 参数的 TinyViT 光栅编码器：性能与矢量输入相当，各噪声档位都稳。</li>
+      <li>也就是说：这套方法对"输出格式怎么设计"不敏感，对"输入里有没有标注"很敏感。</li>
+    </ul>
+    <div class="callout rose">
+      <b>局限：</b>失败案例集中在 3D 位置推断不准（板件之间出现缝隙——位置信息三视图里没有显式对应）和 L 形柜体的位姿歧义。
+    </div>
+  </div>
+</section>
+
+<!-- ========== 05 Drawing2CAD ========== -->
+<section id="s5">
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <div class="sec-num">05</div>
+      <div>
+        <h2>Drawing2CAD：矢量图 → CAD 操作序列</h2>
+        <div class="sub">ACM MM 2025 · arXiv 2508.18733 · Sequence-to-Sequence Learning</div>
+      </div>
+    </div>
+    <div class="prose">
+      <p>
+        <span class="tag t-blue">ACM MM 2025</span><span class="tag t-cyan">arXiv 2508.18733</span><span class="tag t-violet">15.8 万配对</span><span class="tag t-amber">双解码器</span>
+      </p>
+      <p>
+        <strong>动机：</strong>工业流程的起点本来就是矢量工程图，但"矢量图 → 参数化 CAD"在此之前没有学习式方法——
+        此前 CAD 生成研究的输入全是点云、网格或文本。
+        <strong>方法：</strong>把 CAD 生成重构为序列到序列学习，三个组件各管一段：
+      </p>
+    </div>
+    <div class="grid g3">
+      <div class="card">
+        <h3><span class="ico" style="background:var(--blue-soft);color:var(--blue)">◈</span>矢量原语表示</h3>
+        <p>SVG 简化为 LineTo + CubicBézier，每命令 8 参数、8-bit 量化（257 类）；命令带视图标签；嵌入用拼接 + MLP。</p>
+        <div class="mot"><b>要点：</b>颜色、填充、可见性全部丢弃——CAD 重建只关心几何。</div>
+      </div>
+      <div class="card">
+        <h3><span class="ico" style="background:var(--cyan-soft);color:var(--cyan)">◈</span>双解码器</h3>
+        <p>命令解码器预测 CAD 操作类型（Line/Circle/Arc/Extrude），参数解码器生成参数向量；命令隐状态直接注入参数支路。</p>
+        <div class="mot"><b>要点：</b>解耦之后，命令对得更齐、参数学得更稳。</div>
+      </div>
+      <div class="card">
+        <h3><span class="ico" style="background:var(--violet-soft);color:var(--violet)">◈</span>软目标损失</h3>
+        <p>参数预测不再硬 one-hot，而是把真值按量化邻域摊开成指数衰减分布，容差窗口$\pm 3$内非零。</p>
+        <div class="mot"><b>要点：</b>差 1–3 个量化级不改变设计意图，不该被当成错误惩罚。</div>
+      </div>
+    </div>
+    <div class="prose">
+      <p>三个组件串成的完整流水线如下——命令与参数分家，靠"命令引导"保持逐步对应：</p>
+    </div>
+    <figure>
+      <img src="assets/paper/paper_drawing2cad_pipeline.png" alt="Drawing2CAD 四阶段流水线（论文原图）">
+      <figcaption>图 5 · 论文原图 · Drawing2CAD 流水线：矢量工程图输入（1×/3×/4×）→ 拼接式学习嵌入 → 编码器得 z → 双解码（Cmd/Args，命令引导）→ 完整操作序列经 CAD 内核生成 3D 模型（原文说明译）</figcaption>
+    </figure>
+    <div class="prose">
+      <p>矢量原语的形式化定义——每个命令 8 个参数：</p>
+    </div>
+    <div class="math-display">$$
+X = (x_1, y_1, c_{x1}, c_{y1}, c_{x2}, c_{y2}, x_2, y_2) \in \mathbb{R}^8 \tag{4}
+$$</div>
+    <div class="prose">
+      <p>
+        即起点、终点与两个 Bézier 控制点；LineTo 的控制点槽位填$-1$。坐标归一化到$200 \times 200$视框、量化为 8-bit（257 类，含一个"未使用"槽位），
+        每条命令附带视图标签$\{$Front, Top, Right, Isometric$\}$。嵌入融合用<strong>拼接 + MLP</strong>，而非以往工作的线性相加——
+        这个看似小的改动在消融里贡献了可观的增益。
+      </p>
+      <p>
+        软目标分布损失：参数预测的交叉熵目标是按量化邻域摊开的分布，而不是硬 one-hot：
+      </p>
+    </div>
+    <div class="math-display">$$
+\mathcal{L}_{\text{args}} = -\sum_{i}\sum_{j}\sum_{k} \tilde{y}_k \log \hat{y}_k, \qquad \tilde{y}_k = \frac{e^{-\alpha |k - y|}}{Z},\;\; k \in [y - \tau,\, y + \tau] \tag{5}
+$$</div>
+    <div class="prose">
+      <p>
+        其中$y$为真值量化级，$\tilde{y}_k$是以$y$为中心、按$e^{-\alpha|k-y|}$衰减的软目标分布（只容许容差窗口$[\pm\tau]$内非零），
+        实际取$\alpha = 2.0$、$\tau = 3$，窗口外为 0。
+        <strong>直觉：CAD 参数差 1–3 个量化级往往不改变设计意图，硬 one-hot 把模型逼得太紧，反而学不出"差不多对"的容错能力。</strong>
+      </p>
+      <h3>数据与推理流程</h3>
+      <p>
+        数据集 CAD-VGDrawing 从公开 CAD 操作序列数据集 DeepCAD 的 17.6 万模型出发，用 FreeCAD TechDraw 脚本合成四视图 SVG，
+        过滤无效样本后得到 157,591 对，按 90/5/5 划分；矢量格式之外还同步导出了 15 万张栅格图。推理循环如下：
+      </p>
+    </div>
+    <div class="codewrap">
+      <button class="copy" type="button">复制</button>
+      <pre><code><span class="c"># 双解码器 + 命令引导的参数生成（伪代码）</span>
+<span class="f">z</span> = <span class="k">encoder</span>(flatten(views))                     <span class="c"># 4 层 Transformer, 输出取平均</span>
+<span class="k">for</span> t <span class="k">in</span> <span class="k">range</span>(max_len):                        <span class="c"># 自回归, 每步两条支路</span>
+    <span class="f">cmd_logits</span> = <span class="k">cmd_decoder</span>(z, history)        <span class="c"># 命令类型: Line/Circle/Arc/Extrude</span>
+    <span class="f">guide</span>      = cmd_decoder.last_hidden        <span class="c"># 命令信息注入参数支路</span>
+    <span class="f">arg_logits</span> = <span class="k">arg_decoder</span>(z, history, guide) <span class="c"># 257 类 × 8 参数位</span>
+    <span class="f">cmd, args</span>  = sample(cmd_logits), greedy(arg_logits)   <span class="c"># 参数容差 η=3</span>
+    history.append(pack(cmd, args))
+    <span class="k">if</span> cmd == EOS: <span class="k">break</span>
+<span class="f">solid</span> = <span class="k">pythonocc_execute</span>(history)              <span class="c"># OpenCASCADE 内核执行成实体</span></code></pre>
+    </div>
+    <div class="prose">
+      <h3>结果与消融</h3>
+      <p>
+        基线是把同样的输入喂给 DeepCAD 式单解码器。指标：ACC_cmd（命令类型准确率）、ACC_param（参数准确率，容差$\eta = 3$）、
+        IR（无法执行出合法 3D 形状的序列比例）、CD（倒角距离，2,000 采样点，$\times 10^{-2}$）。
+      </p>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>输入视图</th><th>方法</th><th>ACC_cmd↑</th><th>ACC_param↑</th><th>IR↓</th><th>CD↓</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>等轴测 1×</td><td>基线</td><td class="r">80.78</td><td class="r">73.73</td><td class="r">23.29</td><td class="r">11.52</td></tr>
+          <tr><td>等轴测 1×</td><td>Drawing2CAD</td><td class="r"><strong>81.81</strong></td><td class="r"><strong>74.35</strong></td><td class="r"><strong>21.40</strong></td><td class="r">12.10</td></tr>
+          <tr><td>正交三视图 3×</td><td>基线</td><td class="r">81.39</td><td class="r">74.76</td><td class="r">22.97</td><td class="r">12.15</td></tr>
+          <tr><td>正交三视图 3×</td><td>Drawing2CAD</td><td class="r"><strong>82.12</strong></td><td class="r"><strong>75.43</strong></td><td class="r"><strong>20.99</strong></td><td class="r"><strong>11.98</strong></td></tr>
+          <tr><td>四视图 4×</td><td>基线</td><td class="r">81.51</td><td class="r">75.14</td><td class="r">23.40</td><td class="r">11.37</td></tr>
+          <tr><td>四视图 4×</td><td>Drawing2CAD</td><td class="r"><strong>82.43</strong></td><td class="r"><strong>76.09</strong></td><td class="r"><strong>20.31</strong></td><td class="r"><strong>10.88</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <figure>
+      <img src="assets/d2c_drawing2cad_results.png" alt="Drawing2CAD 与基线的四指标对比">
+      <figcaption>图 6 · Drawing2CAD vs 单解码器基线（同输入）：命令准确率、参数准确率、有效率、CD 四个口径 × 三种输入视图设置</figcaption>
+    </figure>
+    <div class="prose">
+      <p>
+        消融的分工很清楚：双解码器 + 基线损失主要抬 ACC_cmd 与 IR；再叠软损失，ACC_param 明显上涨（4 视图下 75.14 → 76.09）；
+        最后把嵌入融合从线性相加换成拼接 + MLP，各指标再涨一截。唯一的小代价是等轴测输入下 CD 略逊于基线（12.10 vs 11.52）——
+        命令对了对得更齐，但形状精度受制于容差训练。
+      </p>
+      <p>
+        还有一组值得注意的对照：同一模型分别吃矢量图与栅格图——
+        <strong>矢量输入的几何精度优势是实实在在的</strong>，这也解释了为什么 Drawing2CAD 要专门为矢量设计表示。
+      </p>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>输入格式（同一模型，四视图）</th><th>ACC_cmd↑</th><th>ACC_param↑</th><th>IR↓</th><th>CD↓</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>栅格图（DeepCAD-raster）</td><td class="r">77.69</td><td class="r">70.49</td><td class="r">29.79</td><td class="r">18.16</td></tr>
+          <tr><td>矢量图（DeepCAD-vector）</td><td class="r"><strong>81.51</strong></td><td class="r"><strong>75.14</strong></td><td class="r"><strong>23.40</strong></td><td class="r"><strong>11.37</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>
+        训练配置补齐：单卡 RTX 4090，batch 256，训满 200 个 epoch，Adam 学习率 $10^{-3}$、2,000 步 warm-up、
+        dropout 0.1、梯度裁剪 1.0。预处理里还有个容易被忽略的工程点：SVG 路径先做图论轮廓提取并重排序
+        （左上角为原点、轮廓按距离排序、顺时针绘制），让同一形状在不同图纸里得到尽量一致的序列——
+        序列模型对"绘图顺序"敏感，这一步直接决定学习难度。
+      </p>
+    </div>
+    <div class="callout rose">
+      <b>局限：</b>正交视图利于平面布局但伤深度，等轴测利于深度但平面特征易错位，多视角线索冲突时出错；
+      所有视图都看不见的特征（比如侧壁上的孔）原理上无法恢复。
+    </div>
+  </div>
+</section>
+
+<!-- ========== 06 VGGT-CAD ========== -->
+<section id="s6">
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <div class="sec-num">06</div>
+      <div>
+        <h2>VGGT-CAD：多视角图像 + 几何先验</h2>
+        <div class="sub">preprint 2026 · arXiv 2609.21225 · Geometric Grounding</div>
+      </div>
+    </div>
+    <div class="prose">
+      <p>
+        <span class="tag t-blue">preprint 2026</span><span class="tag t-cyan">arXiv 2609.21225</span><span class="tag t-violet">752 万帧</span><span class="tag t-green">非自回归</span>
+      </p>
+      <p>
+        <strong>动机：</strong>前三篇依赖理想图纸；真实场景里用户往往只有几张照片或一段随手拍视频，而且此前的图像输入方法缺少强多视角几何先验。
+        <strong>方法：</strong>把 VGGT（Visual Geometry Grounded Transformer，视觉几何基础模型）的预训练先验迁移到 CAD 重建：
+        相机内外参编码为条件 token 与图像 token 联合建模、变视角跨视角上下文聚合、免训练的几何感知选帧、非自回归序列解码。
+      </p>
+      <h3>相机即条件</h3>
+      <p>每帧的内外参经位姿编码、MLP、Transformer 主干得到相机 token：</p>
+    </div>
+    <div class="math-display">$$
+c_i = \mathrm{Trunk}\big(\mathrm{LN}(\mathrm{MLP}(\mathrm{PoseEnc}(P_i)))\big) \tag{6}
+$$</div>
+    <div class="prose">
+      <p>
+        相机 token 前置到该视图的 image token 序列，依靠 VGGT 的跨视角注意力传播视角信息。
+        同时设一个辅助解码器从相机特征回归平移$t_i \in \mathbb{R}^3$、旋转四元数$q_i \in \mathbb{R}^4$与视场角（FOV，Field of View），构成几何自监督。
+        四元数损失用 min 处理双覆盖：
+      </p>
+    </div>
+    <div class="math-display">$$
+\mathcal{L}_q = \frac{1}{N}\sum_{i=1}^{N} \min\Big(\sum_{d=1}^{4}\big|\hat{q}_{i,d} - q_{i,d}\big|,\;\; \sum_{d=1}^{4}\big|\hat{q}_{i,d} + q_{i,d}\big|\Big) \tag{7}
+$$</div>
+    <div class="prose">
+      <p>
+        因为$q$与$-q$表示同一个旋转，直接算 L1 会惩罚到等价解。总损失为
+      </p>
+    </div>
+    <div class="math-display">$$
+\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{type}} + \beta\,\mathcal{L}_{\text{param}} + \lambda\,\mathcal{L}_{\text{cam}}, \qquad \beta = 2,\;\lambda = 1.0 \tag{8}
+$$</div>
+    <div class="prose">
+      <p>
+        其中命令类型与参数都是交叉熵（无效参数槽位用 Validity Mask 屏蔽），$\mathcal{L}_{\text{cam}}$为平移/四元数/焦距三项 L1 之和；
+        焦距由 FOV 换算而来（$\hat{f}_x = W / (2\tan(\mathrm{FOV}_w/2))$），让几何监督落在真实成像参数上，而不是一个自由浮动的回归头。
+      </p>
+      <h3>变视角聚合与免训练选帧</h3>
+      <p>
+        视角数$N \in [2, 8]$可变：各视图经共享权重卷积 + 自适应池化得到向量$v_i$，MLP 产出注意力权重$\alpha_i$，
+        融合特征$f_{\text{fused}} = \sum_i \alpha_i v_i$。推理时的几何感知确定性（GAD）选帧是免训练的贪心子集选择：
+      </p>
+    </div>
+    <div class="math-display">$$
+\Delta(i \mid S) = \lambda_c\, C(i \mid S) + \lambda_q\, Q(i) - \lambda_r\, R(i \mid S) \tag{9}
+$$</div>
+    <div class="prose">
+      <p>
+        $C$为覆盖度（光轴夹角、相机基线、方位角），$Q$为图像质量（拉普拉斯方差清晰度、亮度熵、前景占比），
+        $R$为与已选集合的姿态相似冗余惩罚，最优权重$(\lambda_c, \lambda_q, \lambda_r) = (0.50, 0.35, 0.15)$。
+      </p>
+    </div>
+    <div class="codewrap">
+      <button class="copy" type="button">复制</button>
+      <pre><code><span class="k">def</span> <span class="f">gad_select</span>(frames, k):
+    <span class="c"># 免训练的推理期选帧：贪心最大化 Δ(i|S)</span>
+    S = []
+    <span class="k">while</span> <span class="k">len</span>(S) &lt; k:
+        i = <span class="k">argmax</span>(lambda_c * coverage(i, S)     <span class="c"># 覆盖: 光轴角/基线/方位</span>
+                 + lambda_q * quality(i)         <span class="c"># 质量: 清晰度/亮度熵/前景占比</span>
+                 - lambda_r * redundancy(i, S))  <span class="c"># 冗余: 与已选视角的姿态相似度</span>
+        S.append(i)
+    <span class="k">return</span> S                                     <span class="c"># (λc, λq, λr) = (0.50, 0.35, 0.15)</span></code></pre>
+    </div>
+    <div class="prose">
+      <p>
+        最终的非自回归解码器用$N_c$个可学习查询$E \in \mathbb{R}^{N_c \times d_E}$对全局潜变量做交叉注意力，
+        两个并行头分别预测命令类型与 16 维参数向量（每参数 256 级量化，无效槽位填$-1$）——所有命令一次并行产出，不再逐 token 排队。
+      </p>
+      <h3>VideoCAD 基准与主结果</h3>
+      <p>
+        基准基于 ABC-mono 语料：20.9 万 CAD 模型，每模型 36 个随机朝向、连续变化的视角渲染，共 7,518,708 帧；
+        帧按时间排序以模拟"随手拍视频"，支持单视角到$2 \sim 8$视角评测。数据按 90/5/5 划分。
+      </p>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>方法</th><th>输入</th><th>ACC_cmd↑</th><th>ACC_param↑</th><th>CD↓</th><th>IR↓</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>DeepCAD*</td><td>单视图</td><td class="r">0.6511</td><td class="r">0.6116</td><td class="r">0.3513</td><td class="r">0.3427</td></tr>
+          <tr><td>VGGT-CAD</td><td>单视图</td><td class="r"><strong>0.7854</strong></td><td class="r"><strong>0.6714</strong></td><td class="r"><strong>0.1482</strong></td><td class="r">0.3535</td></tr>
+          <tr><td>DeepCAD-Mv</td><td>多视图</td><td class="r">0.7509</td><td class="r">0.6352</td><td class="r">0.2123</td><td class="r">0.3826</td></tr>
+          <tr><td>VGGT-CAD</td><td>多视图</td><td class="r"><strong>0.8213</strong></td><td class="r"><strong>0.7104</strong></td><td class="r"><strong>0.0670</strong></td><td class="r"><strong>0.3020</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <figure>
+      <img src="assets/paper/paper_vggtcad_pipeline.png" alt="VGGT-CAD 框架（论文原图）">
+      <figcaption>图 7 · 论文原图 · VGGT-CAD 框架五组件：几何感知确定性选帧 → 相机条件编码 + 几何多视角视觉编码器 → 变视角跨视角上下文聚合 → 非自回归序列解码器 → 辅助相机解码器提供 $L_{\text{cam}}$ 监督（原文说明译）</figcaption>
+    </figure>
+    <div class="prose">
+      <p>
+        作为参照，把图纸当普通图片的网格重建基线只能比 CD：TripoSR 0.7207、Hunyuan3D 0.4126、One-2-3-45 0.1736；
+        VGGT-CAD 单视角 0.1482、多视角 0.0670——形状精度的差距是结构性的。
+      </p>
+    </div>
+    <div class="prose">
+      <p>
+        训练配置：VGGT 主干用 LoRA（$r=32$）微调，仅更新 12.52M / 142.7M 的参数；相机编码器-解码器、跨视角聚合器与
+        序列解码器从零训练；4 张 A800 80G，输入 512×512，Adam 学习率 $10^{-3}$、batch 4。
+        两个非自回归并行头的输出互不排队——这也解释了它相对逐 token 生成在推理侧的结构性优势。
+      </p>
+    </div>
+    <div class="mot-list">
+      <div class="mot-item">
+        <div class="n" style="background:var(--blue)">1</div>
+        <div class="txt"><b>LoRA vs 全量微调：</b>LoRA 只训 12.52M 参数（全量为 142.7M），ACC_cmd 0.8213 vs 0.7202，CD 0.0670 vs 0.2317。
+          全量微调把 VGGT 的预训练先验"灾难性遗忘"掉了——<b>先验保留比参数预算重要。</b></div>
+      </div>
+      <div class="mot-item">
+        <div class="n" style="background:var(--cyan)">2</div>
+        <div class="txt"><b>相机条件的贡献：</b>无相机条件 CD 0.1026，加相机输入 0.0742，再加相机输出监督 0.0677——
+          相机信息的输入输出两端合计把 CD 压低 34.02%。</div>
+      </div>
+      <div class="mot-item">
+        <div class="n" style="background:var(--violet)">3</div>
+        <div class="txt"><b>聚合方式：</b>跨视角注意力（CD 0.0670）完胜均值池化（0.1699）与最大值池化（0.1653）；
+          "仅按质量选帧"反而变差（CD 0.07516），"仅按覆盖度"CD 最低（0.06505），完整权重组合给出最好的综合指标。</div>
+      </div>
+    </div>
+    <div class="prose" style="margin-top:18px">
+      <p>
+        视角数从 1 加到 8，ACC_cmd 从 0.7854 涨到 0.8213、CD 从 0.1482 降到 0.0670，增益到 6 视角后进入平台期。
+      </p>
+    </div>
+    <div class="callout rose">
+      <b>局限：</b>细管状结构与完全封闭的腔体仍然困难——前者几何信号太弱，后者物理上不可见。
+    </div>
+  </div>
+</section>
+
+<!-- ========== 07 OmniMech ========== -->
+<section id="s7">
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <div class="sec-num">07</div>
+      <div>
+        <h2>OmniMech：25 万真实图纸的"摸底考试"</h2>
+        <div class="sub">preprint 2026 · arXiv 2608.05539 · Million-scale Benchmark</div>
+      </div>
+    </div>
+    <div class="prose">
+      <p>
+        <span class="tag t-blue">Benchmark 2026</span><span class="tag t-cyan">arXiv 2608.05539</span><span class="tag t-violet">25.1 万对</span><span class="tag t-rose">暴露差距</span>
+      </p>
+      <p>
+        <strong>动机：</strong>此前的数据集多为合成图纸、标注稀疏；真实工业图纸带着完整的尺寸标注、几何符号、特征说明与公差约束，
+        但从未有人用它系统评测过"模型能不能真的把图纸读明白"。
+        <strong>方法：</strong>从 GrabCAD、3D ContentCentral、TraceParts 与 GitHub 收集真实可编辑 SolidWorks 工程
+        （原生 .SLDPRT 零件 + .SLDDRW 图纸），经 SolidWorks API 导出 STEP B-rep（Boundary Representation，边界表示）、OBJ 网格、
+        28 个渲染视角（20 个来自十二面体顶点、8 个来自立方体顶点）与漫游视频。
+        共 25.1 万对图纸-模型，约 3.7 万个实体、平均每图 15.62 个尺寸标注，覆盖机器人、汽车、航空、医疗、农机、无人机等领域。
+        <strong>实验：</strong>9 个前沿大模型 + 5 个专用/3D 基线，零样本评测$N = 5000$。
+      </p>
+    </div>
+    <div class="prose">
+      <p>基准里"真实图纸"长什么样、数据管线如何铺开，论文总览图最直观：</p>
+    </div>
+    <figure>
+      <img src="assets/paper/paper_omnimech_overview.png" alt="OmniMech 基准总览（论文原图）">
+      <figcaption>图 8 · 论文原图 · OmniMech 基准总览：一张真实 2D 工程图的正交投影、剖面视图、尺寸标注与轴测图，配套真值 3D（Mesh/B-Rep）、立方体与十二面体顶点多视角渲染及视频（原文说明："Overview of OmniMech benchmark with representative cases"）</figcaption>
+    </figure>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>四个任务</th><th>考什么</th><th>核心指标</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>① 图纸 → 参数化 CAD 程序</td><td>程序合法性与可执行性</td><td>语法/执行通过率、程序长度、操作多样性</td></tr>
+          <tr><td>② 图 → 3D 推理</td><td>多视角证据下的几何重建</td><td>CD、表面/体积 IoU（SIoU/VIoU）、F-score、面积/体积误差</td></tr>
+          <tr><td>③ 标注接地推理</td><td>尺寸/符号/公差作为约束执行</td><td>误差相对标注的偏离</td></tr>
+          <tr><td>④ 工具增强 agentic 重建</td><td>多轮调用可视化/测量/CAD 执行/验证工具</td><td>通过率、步数、token 效率、自停率</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <h3>摸底数字</h3>
+      <p>零样本结果（2D 图纸输入）中最有代表性的几行：</p>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>模型</th><th>CD↓</th><th>SIoU↑</th><th>VIoU↑</th><th>通过率↑</th><th>体积误差↓</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Gemini 3.1 Pro</td><td class="r">3.46</td><td class="r"><strong>0.64</strong></td><td class="r"><strong>0.83</strong></td><td class="r">81.1%</td><td class="r">23.7%</td></tr>
+          <tr><td>GPT-5.5</td><td class="r"><strong>3.34</strong></td><td class="r">0.59</td><td class="r">0.80</td><td class="r">92.6%</td><td class="r">41.6%</td></tr>
+          <tr><td>Claude Opus 4.8</td><td class="r">4.18</td><td class="r">0.52</td><td class="r">0.73</td><td class="r">92.7%</td><td class="r">—</td></tr>
+          <tr><td>Hunyuan3D-2 等图像→3D 模型</td><td class="r">—</td><td class="r">≤ 0.18</td><td class="r">≤ 0.15</td><td class="r">—</td><td class="r">最高 5,515%</td></tr>
+          <tr><td>CAD-Coder（专用程序合成）</td><td class="r">16.3</td><td class="r">0.14</td><td class="r">—</td><td class="r">28.9%</td><td class="r">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <figure>
+      <img src="assets/d2c_omnimech.png" alt="OmniMech 零样本 SIoU/VIoU 摸底">
+      <figcaption>图 9 · 零样本摸底（N=5,000）：Gemini 3.1 Pro 的 SIoU 0.64 / VIoU 0.83 为全场最好；图像→3D 与专用程序合成基线全面落后</figcaption>
+    </figure>
+    <div class="prose">
+      <p>
+        把口径补全。程序合法性维度看四件事：语法有效性、可执行性、程序长度与 CAD 操作多样性——能跑通只是及格线。
+        Agentic 协议提供两档视觉反馈：模型自控相机参数的"自适应视角选择"，或按需调取的"固定 8 视角渲染"；
+        多轮迭代的终点是重建合法或触达步数上限。Agentic 模式下 GPT-5.5 进一步拿到 CD 2.92、SIoU 0.63、VIoU 0.82、
+        体积误差 15.91%、通过率 92.37%；Claude Opus 4.8 固定 8 视角通过率 96.93%；而 Gemini 3.5 Flash 自适应档
+        CD 2.70 但通过率只有 71.71%——<strong>跑得通和画得准，是两个独立的难点。</strong>
+        数据侧的分量：37,071 个实体、204.8 万面、347.6 万顶点，单件体积从 1,237 到 2,145,030 mm³，尺度跨三个数量级。
+      </p>
+    </div>
+    <div class="mot-list">
+      <div class="mot-item">
+        <div class="n" style="background:var(--blue)">1</div>
+        <div class="txt"><b>视觉输入越多不一定越好。</b>GPT-5.4 Mini 的通过率从 8 视角的 60.02% 掉到 20 视角的 48.90%——更多渲染图带来更多干扰。</div>
+      </div>
+      <div class="mot-item">
+        <div class="n" style="background:var(--cyan)">2</div>
+        <div class="txt"><b>Agentic 迭代救"通过率"，不救几何。</b>GPT-5.4 Mini 通过率 55.48% → 80.77%，但 CD/尺寸精度提升有限；
+          工具能帮模型把代码跑通，帮不了它把尺寸看准。</div>
+      </div>
+      <div class="mot-item">
+        <div class="n" style="background:var(--amber)">3</div>
+        <div class="txt"><b>能力不足时迭代也无济于事。</b>Qwen 3.5-9B 通过率仅 5.18%，LLaMA 4 Maverick 0.00%——
+          前沿模型自停率 97.8–100%，小模型连"知道自己该停"都学不会。</div>
+      </div>
+      <div class="mot-item">
+        <div class="n" style="background:var(--rose)">4</div>
+        <div class="txt"><b>工程细节被系统性忽略。</b>图像→3D 基线把图纸当普通图片，生成"粗糙、带纹理或浅拉伸"的几何；
+          专用基线 CAD-Coder 则在约 4,096 token 的生成长度上被截断。</div>
+      </div>
+    </div>
+    <div class="callout good">
+      <b>基准设计亮点：</b>Agentic 设置里的"压缩代码历史"（最新脚本保留全文、更早的以 diff 形式给出）把代码历史 token 削减 42.44%——
+      对多轮代码任务是个可以直接抄走的技巧。
+    </div>
+  </div>
+</section>
+
+<!-- ========== 08 对比与结论 ========== -->
+<section id="s8">
+  <div class="wrap reveal">
+    <div class="sec-head">
+      <div class="sec-num">08</div>
+      <div>
+        <h2>横向对比、趋势与结论</h2>
+        <div class="sub">Comparison · Trends · What's next</div>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>论文（发表处）</th><th>输入</th><th>输出表示</th><th>解码方式</th><th>数据规模</th><th>一句话贡献</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><a href="https://arxiv.org/abs/2308.05744" target="_blank" rel="noopener">PlankAssembly</a>（ICCV 2023）</td><td>三视图矢量线稿</td><td>板件程序 + 附着指针</td><td>自回归 + 指针网络</td><td>2.7 万柜体</td><td>噪声鲁棒的图生程序开山</td></tr>
+          <tr><td><a href="https://arxiv.org/abs/2412.11892" target="_blank" rel="noopener">CAD2Program</a>（AAAI 2025）</td><td>栅格整图含标注</td><td>通用文本程序</td><td>VLM 自回归</td><td>36.8 万柜体</td><td>证明 VLM 是可行底座</td></tr>
+          <tr><td><a href="https://arxiv.org/abs/2508.18733" target="_blank" rel="noopener">Drawing2CAD</a>（ACM MM 2025）</td><td>SVG 矢量四视图</td><td>CAD 操作序列</td><td>双解码器自回归</td><td>15.8 万对</td><td>解耦解码 + 软标签损失</td></tr>
+          <tr><td><a href="https://arxiv.org/abs/2608.05539" target="_blank" rel="noopener">OmniMech</a>（preprint 2026）</td><td>真实 SolidWorks 图纸</td><td>——（基准）</td><td>——</td><td>25.1 万对</td><td>四任务摸底，揭示精度差距</td></tr>
+          <tr><td><a href="https://arxiv.org/abs/2609.21225" target="_blank" rel="noopener">VGGT-CAD</a>（preprint 2026）</td><td>多视角图像 + 相机</td><td>CAD 操作序列</td><td>非自回归并行</td><td>20.9 万模型 / 752 万帧</td><td>预训练 3D 先验迁移</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout warn">
+      <b>跨表比较须知：</b>各论文的 CD 定义与尺度不同（归一化方式、采样点数各异），<strong>只能在各自论文内部纵向比较，不能跨表横比</strong>。
+    </div>
+    <div class="prose">
+      <p>还有一条主线藏在数据里：五年间自建配对数据的规模涨了约一个数量级，来源从平台合成走向真实工业资产——</p>
+    </div>
+    <figure>
+      <img src="assets/d2c_datascale.png" alt="五篇论文自建数据规模对比">
+      <figcaption>图 10 · 自建数据规模：2.7 万板件模型 → 36.8 万柜体 → 15.8 万矢量图对 → 20.9 万多视角模型（751.9 万帧）→ 25.1 万真实图纸-模型对；口径不同，仅示意量级</figcaption>
+    </figure>
+    <div class="prose">
+      <h3>四年趋势</h3>
+    </div>
+    <div class="mot-list">
+      <div class="mot-item">
+        <div class="n" style="background:var(--blue)">1</div>
+        <div class="txt"><b>输入在降门槛：</b>合成三视图 → 栅格整图 → 矢量四视图 → 多视角照片/视频 → 真实工业图纸，越来越贴近设计者的原始工作环境。</div>
+      </div>
+      <div class="mot-item">
+        <div class="n" style="background:var(--cyan)">2</div>
+        <div class="txt"><b>表示在通用化：</b>任务专用 DSL → 自由文本 → 通用 CAD 操作序列；专用表示换来了早期鲁棒性，通用表示换来了可扩展性。</div>
+      </div>
+      <div class="mot-item">
+        <div class="n" style="background:var(--violet)">3</div>
+        <div class="txt"><b>解码在去自回归化 + 先验化：</b>从"逐 token 生成"到"可学习查询并行预测"；从"从零训练"到"迁移 VGGT 几何先验 + LoRA"。</div>
+      </div>
+      <div class="mot-item">
+        <div class="n" style="background:var(--green)">4</div>
+        <div class="txt"><b>评测在收紧：</b>从"自己建数据自己评"到"公开基准 + 外部前沿模型零样本摸底"，指标从几何相似度（CD/IoU）
+          扩展到程序合法性、标注接地与工具增强下的可执行性。</div>
+      </div>
+    </div>
+    <div class="grid g2" style="margin-top:26px">
+      <div class="card">
+        <h3><span class="ico" style="background:var(--blue-soft);color:var(--blue)">路</span>四条路线是分治，不是取代</h3>
+        <p>有矢量图纸走 Drawing2CAD 路线，精度最高；有栅格图、想复用 VLM 生态走 CAD2Program；只有照片或视频走 VGGT-CAD；要选型或评测自己的模型，用 OmniMech。</p>
+        <div class="mot"><b>一句话：</b>按你手里有什么输入来选路线。</div>
+      </div>
+      <div class="card">
+        <h3><span class="ico" style="background:var(--green-soft);color:var(--green)">下</span>下一个主战场</h3>
+        <p>尺寸精度与标注约束的可执行性。OmniMech 的数字说明，"看个大概"已经解决，"毫米级正确"远未解决——而后者才是工程图存在的意义。</p>
+        <div class="mot"><b>一句话：</b>短板不在"像不像"，在"准不准"。</div>
+      </div>
+    </div>
+    <div class="quote">
+      <p>四年间，"图生程序"从专用小模型 + 自造 DSL，走到了基础模型先验 + 通用序列 + 百万级基准；下一步比的不是谁更像，而是谁更准。</p>
+      <cite>—— 本文小结</cite>
+    </div>
+    <div class="prose">
+      <h3>参考文献</h3>
+      <ol>
+        <li><a href="https://arxiv.org/abs/2308.05744" target="_blank" rel="noopener">PlankAssembly: Robust 3D Reconstruction from Three Orthographic Views with Learnt Shape Programs</a>（ICCV 2023）</li>
+        <li><a href="https://arxiv.org/abs/2412.11892" target="_blank" rel="noopener">From 2D CAD Drawings to 3D Parametric Models: A Vision-Language Approach</a>（AAAI 2025）</li>
+        <li><a href="https://arxiv.org/abs/2508.18733" target="_blank" rel="noopener">Drawing2CAD: Sequence-to-Sequence Learning for CAD Generation from Vector Drawings</a>（ACM MM 2025）</li>
+        <li><a href="https://arxiv.org/abs/2608.05539" target="_blank" rel="noopener">OmniMech: All-in-one Multimodal Mechanical Benchmark for 3D Reconstruction</a>（arXiv preprint 2026）</li>
+        <li><a href="https://arxiv.org/abs/2609.21225" target="_blank" rel="noopener">VGGT-CAD: Reconstructing Parametric CAD 3D Model with Geometric Grounding</a>（arXiv preprint 2026）</li>
+      </ol>
+    </div>
+    <div class="author-box">
+      <span class="avatar">HLR</span>
+      <div>
+        <b>HL R</b>
+        <p>关注 3D 生成与 CAD 自动化。本文所有数字均引自各论文原文，公式为 KaTeX 渲染，可离线降级。</p>
+      </div>
+    </div>
+    <div class="cta">
+      <p><b>想把这套流程用到你的项目里？</b>按输入模态对号入座：矢量图纸 → Drawing2CAD；栅格图/截图 → CAD2Program；照片视频 → VGGT-CAD；选型评测 → OmniMech。</p>
+      <a class="btn" href="#s1">回到开头</a>
+      <a class="btn ghost" href="https://arxiv.org/list/cs.CV/recent" target="_blank" rel="noopener">追踪最新论文</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>从工程图到参数化 CAD · 五篇论文调研 · 整理时间 2026-09</p>
+    <p>参考文献见 08 节 · 公式引擎 KaTeX 0.18.9 · 可换本地文件</p>
+  </div>
+</footer>
+
+<!-- LaTeX 渲染引擎：KaTeX core + auto-render（顺序不能颠倒；defer 保证不阻塞首屏） -->
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.18.9/dist/katex.min.js"
+        onerror="document.documentElement.classList.add('math-offline')"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.18.9/dist/contrib/auto-render.min.js"
+        onload="window.__renderMath && window.__renderMath()"
+        onerror="document.documentElement.classList.add('math-offline')"></script>
+
+<script>
+(function(){
+  /* 1. 入场动画（无 IntersectionObserver 时直接显示） */
+  var els = document.querySelectorAll('.reveal');
+  if(!('IntersectionObserver' in window)){
+    for(var i=0;i<els.length;i++){els[i].classList.add('on');}
+  }else{
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if(en.isIntersecting){ en.target.classList.add('on'); io.unobserve(en.target); }
+      });
+    }, {threshold:0.08, rootMargin:'0px 0px -40px 0px'});
+    for(var j=0;j<els.length;j++){io.observe(els[j]);}
+    var sweep = function(){
+      for(var k=0;k<els.length;k++){
+        var r = els[k].getBoundingClientRect();
+        if(r.top < window.innerHeight - 40 && r.bottom > 0){ els[k].classList.add('on'); }
+      }
+    };
+    window.addEventListener('load', sweep);
+    window.addEventListener('hashchange', sweep);
+    setTimeout(sweep, 400);
+  }
+
+  /* 2. 阅读进度条 */
+  var bar = document.getElementById('progress');
+  /* 3. 目录高亮 */
+  var links = [].slice.call(document.querySelectorAll('nav.toc a[href^="#"]'));
+  var secs  = links.map(function(a){ return document.querySelector(a.getAttribute('href')); });
+  function onScroll(){
+    var doc = document.documentElement;
+    var max = doc.scrollHeight - window.innerHeight;
+    if(bar) bar.style.width = (max > 0 ? (window.scrollY / max) * 100 : 0) + '%';
+    var y = window.scrollY + 140, act = -1;
+    for(var k=0;k<secs.length;k++){
+      if(secs[k] && secs[k].offsetTop <= y) act = k;
+    }
+    links.forEach(function(a,idx){ a.classList.toggle('active', idx === act); });
+  }
+  var ticking = false;
+  window.addEventListener('scroll', function(){
+    if(ticking) return;
+    ticking = true;
+    requestAnimationFrame(function(){ onScroll(); ticking = false; });
+  }, {passive:true});
+  window.addEventListener('resize', onScroll);
+  onScroll();
+
+  /* 4. 代码块一键复制 */
+  document.querySelectorAll('.codewrap').forEach(function(wrap){
+    var btn = wrap.querySelector('.copy'), code = wrap.querySelector('code');
+    if(!btn || !code) return;
+    btn.addEventListener('click', function(){
+      var text = code.innerText;
+      var done = function(){ btn.textContent = '已复制'; btn.classList.add('done');
+        setTimeout(function(){ btn.textContent = '复制'; btn.classList.remove('done'); }, 1600); };
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(done, done);
+      }else{
+        var ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        try{ document.execCommand('copy'); }catch(e){}
+        document.body.removeChild(ta); done();
+      }
+    });
+  });
+
+  /* 5. LaTeX 公式渲染（KaTeX auto-render） */
+  window.__renderMath = function(){
+    if(typeof window.renderMathInElement !== 'function') return;
+    try{
+      renderMathInElement(document.body, {
+        delimiters:[
+          {left:'$$', right:'$$', display:true},
+          {left:'\\[', right:'\\]', display:true},
+          {left:'\\(', right:'\\)', display:false},
+          {left:'$',  right:'$',  display:false}
+        ],
+        ignoredTags:['script','noscript','style','textarea','pre','code','option','svg'],
+        throwOnError:false,
+        errorColor:'#E11D48',
+        strict:false,
+        macros:{
+          '\\RR':'\\mathbb{R}',
+          '\\dd':'\\mathrm{d}',
+          '\\argmax':'\\operatorname*{arg\\,max}'
+        }
+      });
+      document.documentElement.classList.add('math-ok');
+      document.documentElement.classList.remove('math-offline');
+    }catch(e){
+      document.documentElement.classList.add('math-offline');
+    }
+    onScroll();
+  };
+
+  /* 兜底：4 秒内没拿到渲染器就切到源码视图 */
+  setTimeout(function(){
+    if(!document.documentElement.classList.contains('math-ok')){
+      document.documentElement.classList.add('math-offline');
+    }
+  }, 4000);
+})();
+</script>
+</body>
+</html>
