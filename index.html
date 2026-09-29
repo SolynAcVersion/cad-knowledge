@@ -1,86 +1,372 @@
 <!DOCTYPE html>
+
 <html lang="zh-CN">
+
 <head>
+
 <meta charset="UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CAD Knowledge · 知识库</title>
+
+<title>CAD 知识库</title>
+
 <style>
-:root{--bg:#f6f8fa;--card:#fff;--ink:#1f2328;--muted:#656d76;--brand:#2563eb;--line:#e5e7eb}
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.7}
-header{background:linear-gradient(135deg,#0f172a 0%,#2563eb 60%,#7c3aed 100%);color:#fff;padding:72px 24px 64px;text-align:center}
-header h1{font-size:2.4rem;letter-spacing:1px}
-header p{margin-top:12px;opacity:.85}
-main{max-width:1080px;margin:-32px auto 64px;padding:0 24px}
-.section{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px 32px;margin-bottom:24px;box-shadow:0 4px 16px rgba(0,0,0,.05)}
-.section h2{font-size:1.3rem;margin-bottom:18px;padding-left:12px;border-left:4px solid var(--brand)}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
-a.card{display:block;background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:22px;text-decoration:none;color:inherit;transition:.2s}
-a.card:hover{border-color:var(--brand);box-shadow:0 6px 20px rgba(37,99,235,.12);transform:translateY(-2px)}
-a.card h3{font-size:1.05rem;color:var(--brand);margin-bottom:8px}
-a.card p{font-size:.88rem;color:var(--muted)}
-.icon{font-size:1.6rem;display:block;margin-bottom:10px}
-footer{text-align:center;color:var(--muted);font-size:.85rem;padding:32px 0}
-@media(max-width:640px){header h1{font-size:1.6rem}}
+
+:root{
+
+  --bg:#f6f7f9; --card:#ffffff; --ink:#171a21; --sub:#697280;
+
+  --line:#e6e8ec; --accent:#2f6bff; --accent-soft:#eaf0ff;
+
+  --shadow:0 1px 2px rgba(16,24,40,.04),0 8px 24px rgba(16,24,40,.06);
+
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+body{font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+
+  background:var(--bg);color:var(--ink);line-height:1.65;-webkit-font-smoothing:antialiased}
+
+.layout{max-width:1240px;margin:0 auto;padding:48px 24px 96px;
+
+  display:grid;grid-template-columns:240px 1fr;gap:36px;align-items:start}
+
+.sidebar{position:sticky;top:24px;background:var(--card);border:1px solid var(--line);
+
+  border-radius:16px;padding:20px;box-shadow:var(--shadow)}
+
+.side-title{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--sub);
+
+  font-weight:700;margin-bottom:14px}
+
+.cat{display:flex;align-items:center;justify-content:space-between;width:100%;
+
+  padding:9px 12px;border:0;background:transparent;border-radius:9px;cursor:pointer;
+
+  font:inherit;font-size:14px;color:var(--ink);transition:background .15s;text-align:left}
+
+.cat:hover{background:var(--accent-soft)}
+
+.cat.on{background:var(--accent);color:#fff;font-weight:600}
+
+.cat .n{font-size:12px;opacity:.75;background:rgba(0,0,0,.06);border-radius:6px;
+
+  padding:1px 8px;min-width:26px;text-align:center}
+
+.cat.on .n{background:rgba(255,255,255,.25)}
+
+.side-tip{margin-top:18px;padding-top:16px;border-top:1px solid var(--line);
+
+  font-size:12px;color:var(--sub);line-height:1.7}
+
+header{margin-bottom:28px}
+
+.eyebrow{display:inline-block;font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+
+  color:var(--accent);background:var(--accent-soft);padding:5px 12px;border-radius:999px;
+
+  font-weight:600;margin-bottom:16px}
+
+h1{font-size:clamp(28px,4vw,42px);letter-spacing:-.02em;font-weight:800}
+
+h1 span{color:var(--accent)}
+
+.sub{color:var(--sub);margin-top:10px;font-size:14.5px}
+
+.toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:26px 0 24px}
+
+.search{flex:1;min-width:200px;display:flex;align-items:center;gap:10px;
+
+  background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 14px;
+
+  transition:border-color .2s,box-shadow .2s}
+
+.search:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+
+.search input{border:0;background:transparent;outline:none;font:inherit;width:100%}
+
+select{border:1px solid var(--line);background:var(--card);border-radius:10px;
+
+  padding:9px 12px;font:inherit;font-size:13.5px;color:var(--ink);cursor:pointer}
+
+.section-title{font-size:13px;font-weight:700;color:var(--sub);letter-spacing:.08em;
+
+  text-transform:uppercase;margin:26px 0 14px;display:flex;align-items:center;gap:10px}
+
+.section-title::after{content:"";flex:1;height:1px;background:var(--line)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}
+
+.card{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);
+
+  border-radius:16px;padding:20px;text-decoration:none;color:inherit;box-shadow:var(--shadow);
+
+  transition:transform .22s cubic-bezier(.2,.8,.2,1),box-shadow .22s,border-color .22s;
+
+  position:relative;overflow:hidden}
+
+.card::before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:var(--accent);
+
+  transform:scaleY(0);transform-origin:top;transition:transform .28s cubic-bezier(.2,.8,.2,1)}
+
+.card:hover{transform:translateY(-4px);border-color:#d6ddf0;
+
+  box-shadow:0 4px 8px rgba(16,24,40,.05),0 18px 40px rgba(16,24,40,.10)}
+
+.card:hover::before{transform:scaleY(1)}
+
+.tag{align-self:flex-start;font-size:11px;font-weight:700;letter-spacing:.06em;
+
+  color:var(--accent);background:var(--accent-soft);padding:4px 10px;border-radius:6px;margin-bottom:12px}
+
+.card h3{font-size:16.5px;font-weight:700;margin-bottom:8px;line-height:1.4}
+
+.card p{font-size:13px;color:var(--sub);flex:1;display:-webkit-box;
+
+  -webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+.meta{display:flex;justify-content:space-between;margin-top:16px;padding-top:12px;
+
+  border-top:1px solid var(--line);font-size:12px;color:var(--sub)}
+
+.arrow{color:var(--accent);font-weight:700;transition:transform .22s}
+
+.card:hover .arrow{transform:translateX(4px)}
+
+.empty{grid-column:1/-1;text-align:center;padding:70px 20px;color:var(--sub);
+
+  background:var(--card);border:1px dashed var(--line);border-radius:16px}
+
+footer{text-align:center;margin-top:60px;padding-top:26px;border-top:1px solid var(--line);
+
+  color:var(--sub);font-size:12.5px;grid-column:1/-1}
+
+footer a{color:var(--accent);text-decoration:none}
+
+@media(max-width:860px){
+
+  .layout{grid-template-columns:1fr}
+
+  .sidebar{position:static;display:flex;flex-wrap:wrap;gap:8px}
+
+  .side-title{display:none}
+
+  .cat{width:auto;padding:7px 12px;border:1px solid var(--line);border-radius:999px}
+
+  .cat.on{border-color:var(--accent)}
+
+  .side-tip{display:none}
+
+}
+
 </style>
+
 </head>
+
 <body>
-<header>
-  <h1>📚 CAD Knowledge 知识库</h1>
-  <p>技术调研 · 学习笔记 · 知识沉淀</p>
-</header>
-<main>
-  <div class="section">
-    <h2>🤖 AI 技术</h2>
-    <div class="cards">
-      <a class="card" href="notes/AI技术/ms-swift并行框架.html">
-        <span class="icon">🐙</span>
-        <h3>ms-swift 并行框架支持指南</h3>
-        <p>DDP / DeepSpeed / FSDP2 / Megatron 并行策略与选型建议</p>
-      </a>
-      <a class="card" href="notes/AI技术/大模型训练框架推荐.html">
-        <span class="icon">🧠</span>
-        <h3>大模型训练框架推荐</h3>
-        <p>主流大模型训练框架对比与推荐</p>
-      </a>
+
+<div class="layout">
+
+  <aside class="sidebar" id="sidebar">
+
+    <div class="side-title">📁 分类导航</div>
+
+    <div id="cats"></div>
+
+    <div class="side-tip">💡 新建分类只需在 notes/ 下新建文件夹，把笔记放进去即可自动生成分类。</div>
+
+  </aside>
+
+  <main>
+
+    <header>
+
+      <div class="eyebrow">Knowledge Base</div>
+
+      <h1>CAD <span>知识库</span></h1>
+
+      <p class="sub" id="stat">加载中…</p>
+
+    </header>
+
+    <div class="toolbar">
+
+      <label class="search">
+
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+
+          <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>
+
+        </svg>
+
+        <input id="q" type="search" placeholder="搜索标题、摘要或分类…">
+
+      </label>
+
+      <select id="sort">
+
+        <option value="new">🕐 最新优先</option>
+
+        <option value="old">⏳ 最早优先</option>
+
+        <option value="title">🔤 标题排序</option>
+
+      </select>
+
     </div>
-  </div>
-  <div class="section">
-    <h2>📐 CAD 调研</h2>
-    <div class="cards">
-      <a class="card" href="notes/CAD调研/CAD_Generation_调研报告.html">
-        <span class="icon">📊</span>
-        <h3>CAD Generation 调研报告</h3>
-        <p>CAD 生成领域技术调研与图表分析</p>
-      </a>
+
+    <div id="recent-section">
+
+      <div class="section-title">🆕 最近更新</div>
+
+      <div class="grid" id="recent-grid"></div>
+
     </div>
-  </div>
-  <div class="section">
-    <h2>🛠️ 技术笔记</h2>
-    <div class="cards">
-      <a class="card" href="notes/技术笔记/git-basics.html">
-        <span class="icon">🌿</span>
-        <h3>Git 基础</h3>
-        <p>Git 常用命令与工作流</p>
-      </a>
-      <a class="card" href="notes/技术笔记/github-pages.html">
-        <span class="icon">🚀</span>
-        <h3>GitHub Pages</h3>
-        <p>静态站点部署指南</p>
-      </a>
-    </div>
-  </div>
-  <div class="section">
-    <h2>📖 读书笔记</h2>
-    <div class="cards">
-      <a class="card" href="notes/读书笔记/deep-work.html">
-        <span class="icon">📘</span>
-        <h3>《深度工作》</h3>
-        <p>Deep Work 读书笔记</p>
-      </a>
-    </div>
-  </div>
-</main>
-<footer>CAD Knowledge · 由 AiPy 章鱼哥整理</footer>
+
+    <div class="section-title">📚 全部笔记</div>
+
+    <div class="grid" id="grid"></div>
+
+    <footer>
+
+      Generated by <a href="https://www.aipyaipy.com" target="_blank">AiPy</a> · 本地数据处理，不上传任何信息
+
+    </footer>
+
+  </main>
+
+</div>
+
+<script>
+
+const DATA = [{"rel":"AI技术/ms-swift并行框架.html","title":"ms-swift 并行框架支持指南 · DDP/DeepSpeed/FSDP2/Megatron","summary":"ms-swift 并行框架全景速查：DDP、device_map、DeepSpeed ZeRO、FSDP/FSDP2、序列并行（Ulysses/Ring-Attention）与 Megatron TP/PP/SP/CP/EP/VPP 并行策略 · 2026-09-29 · 官方文档核验","category":"AI技术","date":"2026-09-29","mtime":"","ts":1790589022.382214},{"rel":"AI技术/大模型训练框架推荐.html","title":"大模型训练框架推荐 · LLM+VLM / SFT+RL+LoRA","summary":"大模型训练框架推荐 · LLM+VLM / SFT+RL+LoRA Framework Recommendation · 2026-09-28 实测 大模型训练框架推荐 LLM + VLM · SFT + RL + LoRA 针对「同时支持…","category":"AI技术","mtime":"2026-09-28","ts":1790589022.382214},{"rel":"CAD调研/CAD_Generation_调研报告.html","title":"CAD Generation 论文调研报告 · 设定 · 方法 · Motivation","summary":"CAD Generation 论文调研报告 · 设定 · 方法 · Motivation Research Digest · 2026 CAD Generation 论文调研 设定 · 方法 · Motivation 计算机辅助设计（CAD…","category":"CAD调研","mtime":"2026-09-28","ts":1790574206.348633},{"rel":"技术笔记/git-basics.html","title":"Git 常用命令速查","summary":"Git 常用命令速查 Git 常用命令速查 2026-09-20 · 技术笔记 日常三件套 git add . git commit -m \"说明\" git push 分支操作 git checkout -b feature/xxx # 新…","category":"技术笔记","mtime":"2026-09-28","ts":1790573937.8921409},{"rel":"技术笔记/github-pages.html","title":"用 GitHub Pages 托管静态站点","summary":"用 GitHub Pages 托管静态站点 用 GitHub Pages 托管静态站点 2026-09-25 · 技术笔记 三步上线 1. 新建仓库，命名为 用户名.github.io 2. 把 index.html 推到 main 分支 …","category":"技术笔记","mtime":"2026-09-28","ts":1790573937.8931184},{"rel":"读书笔记/deep-work.html","title":"《深度工作》读书笔记","summary":"《深度工作》读书笔记 《深度工作》读书笔记 2026-09-18 · 读书笔记 核心观点 深度工作 = 在无干扰状态下专注进行的职业活动，能把认知能力推向极限。这种努力能创造新价值、提升技能，且难以复制。 四种哲学 禁欲主义 ：彻底切断浮浅…","category":"读书笔记","mtime":"2026-09-28","ts":1790573937.894096}];
+
+const catsEl = document.getElementById('cats');
+
+const grid = document.getElementById('grid');
+
+const recentGrid = document.getElementById('recent-grid');
+
+const recentSection = document.getElementById('recent-section');
+
+const q = document.getElementById('q');
+
+const sortSel = document.getElementById('sort');
+
+let curCat = 'ALL';
+
+const counts = {};
+
+DATA.forEach(d => counts[d.category] = (counts[d.category] || 0) + 1);
+
+const cats = ['ALL', ...Object.keys(counts).sort()];
+
+function esc(s){
+
+  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+
+}
+
+function renderCats(){
+
+  catsEl.innerHTML = '';
+
+  catsEl.appendChild(catBtn('ALL', '全部', DATA.length));
+
+  cats.slice(1).forEach(c => catsEl.appendChild(catBtn(c, c, counts[c])));
+
+}
+
+function catBtn(key, label, n){
+
+  const b = document.createElement('button');
+
+  b.className = 'cat' + (key === curCat ? ' on' : '');
+
+  b.innerHTML = '<span>' + esc(label) + '</span><span class="n">' + n + '</span>';
+
+  b.onclick = () => { curCat = key; renderCats(); render(); };
+
+  return b;
+
+}
+
+function card(d){
+
+  return '<a class="card" href="notes/' + encodeURI(d.rel) + '" target="_blank">' +
+
+    '<span class="tag">' + esc(d.category) + '</span>' +
+
+    '<h3>' + esc(d.title) + '</h3>' +
+
+    '<p>' + (esc(d.summary) || '暂无摘要') + '</p>' +
+
+    '<div class="meta"><span>' + esc(d.mtime) + '</span><span class="arrow">阅读 →</span></div></a>';
+
+}
+
+function render(){
+
+  const kw = q.value.trim().toLowerCase();
+
+  let list = DATA.filter(d => {
+
+    const okCat = curCat === 'ALL' || d.category === curCat;
+
+    const okKw = !kw || (d.title + d.summary + d.category).toLowerCase().includes(kw);
+
+    return okCat && okKw;
+
+  });
+
+  const sort = sortSel.value;
+
+  if (sort === 'new') list.sort((a,b) => b.ts - a.ts);
+
+  else if (sort === 'old') list.sort((a,b) => a.ts - b.ts);
+
+  else list.sort((a,b) => a.title.localeCompare(b.title, 'zh'));
+
+  document.getElementById('stat').textContent =
+
+    '共 ' + DATA.length + ' 篇笔记 · ' + Object.keys(counts).length + ' 个分类' +
+
+    (list.length !== DATA.length ? ' · 筛选出 ' + list.length + ' 篇' : '');
+
+  grid.innerHTML = list.length
+
+    ? list.map(card).join('')
+
+    : '<div class="empty">没有找到匹配的笔记 🔍</div>';
+
+  if (curCat === 'ALL' && !kw){
+
+    const recent = [...DATA].sort((a,b) => b.ts - a.ts).slice(0, 3);
+
+    recentGrid.innerHTML = recent.map(card).join('');
+
+    recentSection.style.display = '';
+
+  } else {
+
+    recentSection.style.display = 'none';
+
+  }
+
+}
+
+renderCats();
+
+q.addEventListener('input', render);
+
+sortSel.addEventListener('change', render);
+
+render();
+
+</script>
+
 </body>
+
 </html>
+
