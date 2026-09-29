@@ -3,109 +3,84 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ms-swift 并行框架支持指南</title>
+<title>CAD Knowledge · 知识库</title>
 <style>
-:root{--bg:#f6f8fa;--card:#fff;--ink:#1f2328;--muted:#656d76;--brand:#2563eb;--brand2:#7c3aed;--line:#e5e7eb;--ok:#16a34a}
+:root{--bg:#f6f8fa;--card:#fff;--ink:#1f2328;--muted:#656d76;--brand:#2563eb;--line:#e5e7eb}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.7}
-header{background:linear-gradient(135deg,#1e3a8a 0%,#2563eb 50%,#7c3aed 100%);color:#fff;padding:72px 24px 64px;text-align:center}
+header{background:linear-gradient(135deg,#0f172a 0%,#2563eb 60%,#7c3aed 100%);color:#fff;padding:72px 24px 64px;text-align:center}
 header h1{font-size:2.4rem;letter-spacing:1px}
-header p{margin-top:12px;opacity:.85;font-size:1.05rem}
-.badges{margin-top:24px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
-.badge{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);padding:6px 16px;border-radius:999px;font-size:.85rem}
+header p{margin-top:12px;opacity:.85}
 main{max-width:1080px;margin:-32px auto 64px;padding:0 24px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:32px;margin-bottom:24px;box-shadow:0 4px 16px rgba(0,0,0,.05)}
-h2{font-size:1.4rem;margin-bottom:16px;padding-left:12px;border-left:4px solid var(--brand)}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
-.item{background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:20px}
-.item h3{font-size:1.05rem;color:var(--brand);margin-bottom:8px}
-.item p{font-size:.9rem;color:var(--muted)}
-code{background:#eef2ff;color:#4338ca;padding:2px 8px;border-radius:6px;font-size:.85em;font-family:Consolas,monospace}
-pre{background:#0f172a;color:#e2e8f0;padding:20px;border-radius:12px;overflow-x:auto;font-size:.88rem;margin-top:12px}
-pre code{background:none;color:inherit;padding:0}
-table{width:100%;border-collapse:collapse;margin-top:8px;font-size:.92rem}
-th,td{border:1px solid var(--line);padding:10px 14px;text-align:left}
-th{background:#f1f5f9}
-tr:nth-child(even) td{background:#fafbfc}
-.tag{display:inline-block;background:#ecfdf5;color:var(--ok);border:1px solid #bbf7d0;font-size:.75rem;padding:2px 10px;border-radius:999px;margin-left:8px}
+.section{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px 32px;margin-bottom:24px;box-shadow:0 4px 16px rgba(0,0,0,.05)}
+.section h2{font-size:1.3rem;margin-bottom:18px;padding-left:12px;border-left:4px solid var(--brand)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+a.card{display:block;background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:22px;text-decoration:none;color:inherit;transition:.2s}
+a.card:hover{border-color:var(--brand);box-shadow:0 6px 20px rgba(37,99,235,.12);transform:translateY(-2px)}
+a.card h3{font-size:1.05rem;color:var(--brand);margin-bottom:8px}
+a.card p{font-size:.88rem;color:var(--muted)}
+.icon{font-size:1.6rem;display:block;margin-bottom:10px}
 footer{text-align:center;color:var(--muted);font-size:.85rem;padding:32px 0}
-a{color:var(--brand);text-decoration:none}
-a:hover{text-decoration:underline}
 @media(max-width:640px){header h1{font-size:1.6rem}}
 </style>
 </head>
 <body>
 <header>
-  <h1>🐙 ms-swift 并行框架支持指南</h1>
-  <p>分布式训练并行技术全景速查 · 数据来源：ms-swift 官方文档</p>
-  <div class="badges">
-    <span class="badge">📅 2026-09-29</span>
-    <span class="badge">✅ 官方文档核验</span>
-    <span class="badge">🔥 FSDP / DeepSpeed / Megatron</span>
-  </div>
+  <h1>📚 CAD Knowledge 知识库</h1>
+  <p>技术调研 · 学习笔记 · 知识沉淀</p>
 </header>
 <main>
-<div class="card">
-  <h2>🧭 两套并行体系</h2>
-  <div class="grid">
-    <div class="item"><h3>ms-swift（Transformers 系）</h3><p>通用易用，覆盖绝大多数模型：DDP、device_map、DeepSpeed ZeRO、FSDP/FSDP2、序列并行（Ulysses / Ring-Attention）。</p></div>
-    <div class="item"><h3>Megatron-SWIFT（Megatron-LM 系）</h3><p>大规模集群 / MoE 模型极致提速：TP、PP、SP、CP、ETP、EP、VPP 全套并行策略。</p></div>
+  <div class="section">
+    <h2>🤖 AI 技术</h2>
+    <div class="cards">
+      <a class="card" href="notes/AI技术/ms-swift并行框架.html">
+        <span class="icon">🐙</span>
+        <h3>ms-swift 并行框架支持指南</h3>
+        <p>DDP / DeepSpeed / FSDP2 / Megatron 并行策略与选型建议</p>
+      </a>
+      <a class="card" href="notes/AI技术/大模型训练框架推荐.html">
+        <span class="icon">🧠</span>
+        <h3>大模型训练框架推荐</h3>
+        <p>主流大模型训练框架对比与推荐</p>
+      </a>
+    </div>
   </div>
-</div>
-<div class="card">
-  <h2>⚡ 训练侧并行框架明细</h2>
-  <table>
-    <tr><th>并行框架</th><th>关键参数</th><th>说明</th></tr>
-    <tr><td><strong>DDP</strong> 数据并行</td><td><code>ddp_backend</code> / <code>ddp_timeout</code></td><td>最基础多卡并行，backend 支持 nccl/gloo/mpi 等，默认自动选择</td></tr>
-    <tr><td><strong>device_map</strong> 模型并行</td><td><code>--device_map auto</code></td><td>按层切分权重到多设备，适合快速验证；Liger kernel 不支持</td></tr>
-    <tr><td><strong>DeepSpeed ZeRO</strong></td><td><code>--deepspeed zero2/zero3</code></td><td>zero0~3 及 offload 版本；支持 ZeRO++（<code>zero_hpz_partition_size</code>）与 AutoTP 张量并行</td></tr>
-    <tr><td><strong>FSDP / FSDP2</strong><span class="tag">推荐</span></td><td><code>--fsdp 'fsdp2'</code></td><td>PyTorch 原生分布式方案，fully_shard 新实现，省显存、易用</td></tr>
-    <tr><td><strong>序列并行</strong></td><td><code>--sequence_parallel_size N</code></td><td>Ulysses + Ring-Attention，超长文本训练降显存；支持 CPT/SFT/DPO/GRPO</td></tr>
-  </table>
-</div>
-<div class="card">
-  <h2>🚀 Megatron-SWIFT 并行策略</h2>
-  <div class="grid">
-    <div class="item"><h3>TP · 张量并行</h3><p>把矩阵运算切到多卡，单层并行加速。</p></div>
-    <div class="item"><h3>PP · 流水线并行</h3><p>按层分段流水执行，VPP 虚拟流水线进一步提效。</p></div>
-    <div class="item"><h3>EP / ETP · 专家并行</h3><p>MoE 模型专家分布到多卡，训练提速关键。</p></div>
-    <div class="item"><h3>SP / CP · 序列 / 上下文并行</h3><p>超长序列切分，突破上下文长度限制。</p></div>
+  <div class="section">
+    <h2>📐 CAD 调研</h2>
+    <div class="cards">
+      <a class="card" href="notes/CAD调研/CAD_Generation_调研报告.html">
+        <span class="icon">📊</span>
+        <h3>CAD Generation 调研报告</h3>
+        <p>CAD 生成领域技术调研与图表分析</p>
+      </a>
+    </div>
   </div>
-  <p style="margin-top:16px;font-size:.9rem;color:var(--muted)">支持任务：CPT / SFT / GRPO / DPO / KTO / RM / GKD / Embedding / Reranker / 序列分类；支持全参数与 LoRA，覆盖 300+ 纯文本、100+ 多模态模型。</p>
-</div>
-<div class="card">
-  <h2>🛠️ 快速上手命令</h2>
-<pre><code># DeepSpeed ZeRO2
-swift sft --deepspeed zero2 ...
-# FSDP2（PyTorch 原生）
-swift sft --fsdp 'fsdp2' ...
-# 序列并行（Ulysses + Ring-Attention）
-swift sft --sequence_parallel_size 4 ...
-# Megatron 并行（TP=2）
-NPROC_PER_NODE=8 megatron sft \
-  --tensor_model_parallel_size 2 ...</code></pre>
-</div>
-<div class="card">
-  <h2>🎯 选型建议</h2>
-  <table>
-    <tr><th>场景</th><th>推荐方案</th></tr>
-    <tr><td>单机多卡通用微调</td><td>DDP 或 DeepSpeed ZeRO2/ZeRO3</td></tr>
-    <tr><td>显存吃紧、想省显存</td><td><code>--fsdp 'fsdp2'</code> 或 ZeRO3 + offload</td></tr>
-    <tr><td>超长文本训练</td><td><code>--sequence_parallel_size N</code></td></tr>
-    <tr><td>大规模集群 / MoE 大模型</td><td>Megatron-SWIFT（TP+PP+EP+CP+VPP）</td></tr>
-    <tr><td>快速验证、模型放不下单卡</td><td><code>device_map='auto'</code></td></tr>
-  </table>
-</div>
-<div class="card">
-  <h2>🌐 推理 / 部署侧并行</h2>
-  <table>
-    <tr><th>引擎</th><th>并行参数</th></tr>
-    <tr><td>vLLM</td><td><code>vllm_tensor_parallel_size</code> / <code>vllm_pipeline_parallel_size</code> / <code>vllm_data_parallel_size</code> / <code>vllm_enable_expert_parallel</code></td></tr>
-    <tr><td>SGLang</td><td><code>sglang_tp_size</code> / <code>sglang_pp_size</code> / <code>sglang_dp_size</code> / <code>sglang_ep_size</code></td></tr>
-    <tr><td>LMDeploy</td><td><code>lmdeploy_tp</code></td></tr>
-  </table>
-</div>
+  <div class="section">
+    <h2>🛠️ 技术笔记</h2>
+    <div class="cards">
+      <a class="card" href="notes/技术笔记/git-basics.html">
+        <span class="icon">🌿</span>
+        <h3>Git 基础</h3>
+        <p>Git 常用命令与工作流</p>
+      </a>
+      <a class="card" href="notes/技术笔记/github-pages.html">
+        <span class="icon">🚀</span>
+        <h3>GitHub Pages</h3>
+        <p>静态站点部署指南</p>
+      </a>
+    </div>
+  </div>
+  <div class="section">
+    <h2>📖 读书笔记</h2>
+    <div class="cards">
+      <a class="card" href="notes/读书笔记/deep-work.html">
+        <span class="icon">📘</span>
+        <h3>《深度工作》</h3>
+        <p>Deep Work 读书笔记</p>
+      </a>
+    </div>
+  </div>
 </main>
-<footer>数据来源：modelscope/ms-swift 官方 README 与 swift.readthedocs.io · 由 AiPy 章鱼哥 🐙 整理</footer>
+<footer>CAD Knowledge · 由 AiPy 章鱼哥整理</footer>
 </body>
 </html>
